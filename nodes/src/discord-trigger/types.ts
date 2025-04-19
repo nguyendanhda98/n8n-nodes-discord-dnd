@@ -5,6 +5,9 @@ export interface ITriggerParameters {
   triggerType: string;
   includeBotMessages: boolean;
   filterByServers: boolean;
+  serverFilterMethod?: 'fromList' | 'byUrl' | 'byId';
+  serverUrl?: string;
+  serverId?: string;
   serverIds: string[];
   filterByChannels: boolean;
   channelIds: string[];

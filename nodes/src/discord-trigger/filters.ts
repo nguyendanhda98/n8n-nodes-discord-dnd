@@ -11,10 +11,9 @@ import { getChannelName } from './utils';
 export const isServerAllowed = (message: Message | PartialMessage, options: IFilterOptions): boolean => {
   if (!options.filterByServers || options.serverIds.length === 0) return true;
   
-  // Allow if guildId is in the serverIds list or guild name matches
-  if (message.guild && options.serverIds.some(id => 
-    id === message.guild?.id || 
-    message.guild?.name.toLowerCase() === id.toLowerCase())) {
+  // For server filtering, we only need to match the guild ID
+  // as all methods (fromList, byUrl, byId) are converted to server IDs
+  if (message.guild && options.serverIds.includes(message.guild.id)) {
     return true;
   }
   

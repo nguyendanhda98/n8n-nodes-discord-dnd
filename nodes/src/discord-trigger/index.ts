@@ -3,11 +3,14 @@ import {
   ITriggerFunctions,
   ITriggerResponse,
   ICredentialDataDecryptedObject,
+  ILoadOptionsFunctions,
+  INodePropertyOptions,
 } from 'n8n-workflow';
 import { initializeDiscordClient } from './client';
 import { setupMessageEventHandler } from './event-handlers';
 import { nodeDescription } from './node-description';
 import { ITriggerParameters } from './types';
+import { Client } from 'discord.js';
 
 /**
  * Discord Trigger node for n8n
@@ -15,6 +18,32 @@ import { ITriggerParameters } from './types';
  */
 export class DiscordTrigger implements INodeType {
   description = nodeDescription;
+
+  methods = {
+    loadOptions: {
+      async getServers(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const credentials = await this.getCredentials('discordApi') as ICredentialDataDecryptedObject;
+        const client = await initializeDiscordClient(credentials.botToken as string);
+        
+        // Wait for client to be ready
+        await new Promise<void>((resolve) => {
+          if (client.isReady()) resolve();
+          else client.once('ready', () => resolve());
+        });
+
+        const servers = client.guilds.cache.map(guild => ({
+          name: guild.name,
+          value: guild.id,
+          description: `Server ID: ${guild.id}`,
+        }));
+
+        // Clean up client
+        client.destroy();
+
+        return servers;
+      },
+    },
+  };
 
   async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
     const credentials = await this.getCredentials('discordApi') as ICredentialDataDecryptedObject;
@@ -34,11 +63,28 @@ export class DiscordTrigger implements INodeType {
       roleIds: [],
     };
 
-    // Process array parameters
+    // Process server filter parameters
     if (parameters.filterByServers) {
-      parameters.serverIds = (this.getNodeParameter('serverIds', '') as string)
-        .split(',')
-        .map(id => id.trim());
+      parameters.serverFilterMethod = this.getNodeParameter('serverFilterMethod', 'fromList') as 'fromList' | 'byUrl' | 'byId';
+      
+      switch (parameters.serverFilterMethod) {
+        case 'fromList':
+          parameters.serverIds = this.getNodeParameter('serverIds', []) as string[];
+          break;
+        case 'byUrl':
+          const url = this.getNodeParameter('serverUrl', '') as string;
+          const serverIdFromUrl = url.split('/').pop();
+          if (serverIdFromUrl) {
+            parameters.serverIds = [serverIdFromUrl];
+          }
+          break;
+        case 'byId':
+          const serverId = this.getNodeParameter('serverId', '') as string;
+          if (serverId) {
+            parameters.serverIds = [serverId];
+          }
+          break;
+      }
     }
     
     if (parameters.filterByChannels) {
