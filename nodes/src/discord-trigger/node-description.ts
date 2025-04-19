@@ -115,7 +115,7 @@ export const nodeDescription: INodeTypeDescription = {
           description: 'Match the message beginning with the specified value',
         },
       ],
-      default: 'contains',
+      default: 'botMention',
       required: true,
     },
     {
