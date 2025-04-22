@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-discord-dnd",
-  "version": "0.1.2",
+  "version": "0.1.5",
   "description": "n8n node to create triggers for Discord events",
   "keywords": [
     "n8n",
@@ -20,7 +20,8 @@
     "build": "tsc && gulp build:icons",
     "lint": "tslint -p tsconfig.json -c tslint.json",
     "watch": "tsc --watch",
-    "test": "jest"
+    "test": "jest",
+    "publish": " rm -rf dist && npm run build && npm publish --access public"
   },
   "files": [
     "dist"
