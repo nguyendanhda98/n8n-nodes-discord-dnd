@@ -95,3 +95,55 @@ export const setupMessageEventHandler = (
     }
   });
 };
+
+/**
+ * Sets up a handler for the selected Discord event
+ * @param client Discord client
+ * @param triggerFunctions n8n trigger functions
+ * @param eventName Discord event name (e.g., 'messageCreate')
+ */
+export const setupSelectedEventHandler = (
+  client: Client,
+  triggerFunctions: ITriggerFunctions,
+  eventName: string
+): void => {
+  client.on(eventName, async (...args: any[]) => {
+    try {
+      // For message events, try to format as message data
+      if (eventName.startsWith('message') && args[0]) {
+        const message = args[0];
+        const messageData = {
+          messageId: message.id,
+          content: message.content,
+          authorId: message.author?.id,
+          authorUsername: message.author?.username,
+          channelId: message.channelId,
+          channelName: message.channel?.name,
+          channelType: message.channel?.type,
+          guildId: message.guildId,
+          guildName: message.guild?.name,
+          isBot: message.author?.bot || false,
+          createdTimestamp: message.createdTimestamp,
+          attachments: message.attachments ? [...message.attachments.values()] : [],
+          embeds: message.embeds || [],
+          mentions: message.mentions || {},
+          reference: message.reference || null,
+          event: eventName,
+          rawData: undefined,
+        };
+        await triggerFunctions.emit([
+          triggerFunctions.helpers.returnJsonArray([messageData])
+        ]);
+      } else {
+        // For other events, just emit the raw event args
+        await triggerFunctions.emit([
+          triggerFunctions.helpers.returnJsonArray([
+            { event: eventName, args }
+          ])
+        ]);
+      }
+    } catch (error) {
+      console.error('Error handling Discord event:', eventName, error);
+    }
+  });
+};
