@@ -20,49 +20,40 @@ export const nodeDescription: INodeTypeDescription = {
   ],
   properties: [
     {
-      displayName: "Trigger Type",
-      name: "triggerType",
+      displayName: "Resource",
+      name: "resource",
       type: "options",
-      options: [
-        {
-          name: "Message Content",
-          value: "messageContent",
-          description: "Triggered based on message content patterns",
-        },
-        {
-          name: "Bot Interaction",
-          value: "botInteraction",
-          description: "Triggered when users interact with the bot",
-        },
-      ],
-      default: "messageContent",
       required: true,
+      default: "guild",
+      description: "The type of Discord event to trigger on",
+      options: [
+        { name: "Guild", value: "guild" },
+        { name: "Message", value: "message" },
+        { name: "Moderation", value: "moderation" },
+        { name: "Emoji & Sticker", value: "emojiSticker" },
+        { name: "Integration & Webhook", value: "integrationWebhook" },
+        { name: "Invite", value: "invite" },
+        { name: "Voice", value: "voice" },
+        { name: "Presence", value: "presence" },
+        { name: "Scheduled Event", value: "scheduledEvent" },
+        { name: "Interaction", value: "interaction" },
+        { name: "Bot Status", value: "botStatus" },
+        { name: "User", value: "user" },
+        { name: "Auto Moderation", value: "autoModeration" },
+        { name: "Poll", value: "poll" },
+      ],
     },
-    // Bot Interaction Options
     {
-      displayName: "Interaction Type",
-      name: "interactionType",
+      displayName: "Event",
+      name: "event",
       type: "options",
-      displayOptions: {
-        show: {
-          triggerType: ["botInteraction"],
-        },
-      },
-      options: [
-        {
-          name: "Bot Mentioned",
-          value: "botMentioned",
-          description: "Triggered when someone mentions the bot in a message",
-        },
-        {
-          name: "Message Replied To",
-          value: "messageReplied",
-          description:
-            "Triggered when someone replies to a message from the bot",
-        },
-      ],
-      default: "botMentioned",
       required: true,
+      default: "",
+      description: "The specific Discord event to listen for",
+      typeOptions: {
+        loadOptionsMethod: "getEvents",
+        loadOptionsDependsOn: ["resource"],
+      },
     },
     {
       displayName: "Filter by Servers",
