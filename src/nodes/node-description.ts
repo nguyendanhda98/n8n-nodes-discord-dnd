@@ -20,15 +20,15 @@ export const nodeDescription: INodeTypeDescription = {
   ],
   properties: [
     {
-      displayName: "Resource",
-      name: "resource",
+      displayName: "Type",
+      name: "type",
       type: "options",
       required: true,
-      default: "guild",
+      default: "message",
       description: "The type of Discord event to trigger on",
       options: [
-        { name: "Guild", value: "guild" },
         { name: "Message", value: "message" },
+        { name: "Guild", value: "guild" },
         { name: "Moderation", value: "moderation" },
         { name: "Emoji & Sticker", value: "emojiSticker" },
         { name: "Integration & Webhook", value: "integrationWebhook" },
@@ -52,7 +52,7 @@ export const nodeDescription: INodeTypeDescription = {
       description: "The specific Discord event to listen for",
       typeOptions: {
         loadOptionsMethod: "getEvents",
-        loadOptionsDependsOn: ["resource"],
+        loadOptionsDependsOn: ["type"],
       },
     },
     {

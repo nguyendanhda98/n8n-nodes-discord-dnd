@@ -3,8 +3,8 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "target": "es2019",
-    "outDir": "./dist",
-    "rootDir": "./",
+    "outDir": "dist",
+    "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -13,6 +13,6 @@
     "declaration": true,
     "sourceMap": true
   },
-  "include": ["nodes/**/*", "credentials/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules/**/*", "**/*.spec.ts", "**/*.test.ts"]
 }
