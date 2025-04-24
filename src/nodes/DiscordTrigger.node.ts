@@ -10,7 +10,8 @@ import {
 import { initializeDiscordClient } from "./client";
 import { nodeDescription } from "./node-description";
 import { ITriggerParameters } from "./types";
-import { GatewayIntentBits } from "discord.js";
+import { GatewayIntentBits, Collection } from "discord.js";
+import { messageToJson } from "../helper/DiscordTrigger-helper";
 
 /**
  * Discord Trigger node for n8n
@@ -24,7 +25,7 @@ export class DiscordTrigger implements INodeType {
       async getEvents(
         this: ILoadOptionsFunctions
       ): Promise<INodePropertyOptions[]> {
-        const type = this.getCurrentNodeParameter("type") as string;
+        const type = this.getCurrentNodeParameter("triggerType") as string;
 
         const eventOptions: { [key: string]: INodePropertyOptions[] } = {
           message: [
@@ -189,14 +190,14 @@ export class DiscordTrigger implements INodeType {
 
     // Extract parameters from node configuration
     const parameters: ITriggerParameters = {
-      type: this.getNodeParameter("type", "message") as string,
+      triggerType: this.getNodeParameter("triggerType", "message") as string,
       event: this.getNodeParameter("event", "messageCreate") as string,
     };
 
     // Define GatewayIntentBits based on type and event
     let intents: GatewayIntentBits[] = [];
 
-    switch (parameters.type) {
+    switch (parameters.triggerType) {
       case "message":
         intents = [
           GatewayIntentBits.Guilds,
@@ -206,6 +207,8 @@ export class DiscordTrigger implements INodeType {
           GatewayIntentBits.GuildMembers,
           GatewayIntentBits.DirectMessages,
           GatewayIntentBits.DirectMessageReactions,
+          GatewayIntentBits.DirectMessageTyping,
+          GatewayIntentBits.GuildMessageTyping,
         ];
         break;
 
@@ -285,7 +288,7 @@ export class DiscordTrigger implements INodeType {
         break;
 
       default:
-        throw new Error(`Unsupported type: ${parameters.type}`);
+        throw new Error(`Unsupported type: ${parameters.triggerType}`);
     }
 
     // Initialize Discord client with specific intents
@@ -312,7 +315,9 @@ export class DiscordTrigger implements INodeType {
           // If already a GuildMember, extract roles
           if (memberOrUser.roles && memberOrUser.guild) {
             return {
-              ...memberOrUser,
+              id: memberOrUser.id,
+              nickname: memberOrUser.nickname,
+              joinedTimestamp: memberOrUser.joinedTimestamp,
               roles: memberOrUser.roles.cache.map((role: any) => ({
                 id: role.id,
                 name: role.name,
@@ -325,13 +330,19 @@ export class DiscordTrigger implements INodeType {
             };
           }
           // If only a User, try to fetch GuildMember if possible
-          if (guildId && memberOrUser.id && client.guilds?.cache?.has(guildId)) {
+          if (
+            guildId &&
+            memberOrUser.id &&
+            client.guilds?.cache?.has(guildId)
+          ) {
             try {
               const guild = client.guilds.cache.get(guildId);
               const member = await guild?.members.fetch(memberOrUser.id);
               if (member) {
                 return {
-                  ...member,
+                  id: member.id,
+                  nickname: member.nickname,
+                  joinedTimestamp: member.joinedTimestamp,
                   roles: member.roles.cache.map((role: any) => ({
                     id: role.id,
                     name: role.name,
@@ -343,7 +354,9 @@ export class DiscordTrigger implements INodeType {
                   })),
                 };
               }
-            } catch {}
+            } catch (error) {
+              console.error("Lỗi khi fetch member:", error);
+            }
           }
           return memberOrUser;
         };
@@ -354,9 +367,12 @@ export class DiscordTrigger implements INodeType {
           case "messageDelete":
           case "messageReactionRemoveAll":
           case "messageReactionRemoveEmoji":
-            data.message = args[0];
-            if (args[0]?.member) {
-              data.member = await enrichMember(args[0].member, args[0]?.guildId || args[0]?.guild?.id);
+            const message = args[0];
+            data.message = messageToJson(message);
+
+            // Nếu là tin nhắn server, lấy thông tin member
+            if (message.guild && message.member) {
+              data.member = await enrichMember(message.member, message.guildId);
             }
             break;
 
@@ -538,8 +554,20 @@ export class DiscordTrigger implements INodeType {
             break;
         }
 
-        // Emit the event data (no filters)
         this.emit([this.helpers.returnJsonArray([data])]);
+      });
+
+      // Log trạng thái bot
+      client.on("ready", () => {
+        console.log("Bot đã sẵn sàng! Đang chờ tin nhắn...");
+      });
+
+      client.on("debug", (info) => {
+        console.log("Debug Discord.js:", info);
+      });
+
+      client.on("error", (error) => {
+        console.error("Lỗi Discord.js:", error);
       });
     };
 

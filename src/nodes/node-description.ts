@@ -20,8 +20,8 @@ export const nodeDescription: INodeTypeDescription = {
   ],
   properties: [
     {
-      displayName: "Type",
-      name: "type",
+      displayName: "Trigger Type",
+      name: "triggerType",
       type: "options",
       required: true,
       default: "message",
@@ -52,7 +52,7 @@ export const nodeDescription: INodeTypeDescription = {
       description: "The specific Discord event to listen for",
       typeOptions: {
         loadOptionsMethod: "getEvents",
-        loadOptionsDependsOn: ["type"],
+        loadOptionsDependsOn: ["triggerType"],
       },
     },
   ],

@@ -1,4 +1,4 @@
-import {Client, GatewayIntentBits } from "discord.js";
+import { Client, GatewayIntentBits } from "discord.js";
 
 /**
  * Initializes the Discord client, sets up events, and logs in
@@ -16,7 +16,7 @@ export const initializeDiscordClient = async (
   }
 
   const client = new Client({
-    intents: intents,
+    intents,
   });
 
   // Login to Discord

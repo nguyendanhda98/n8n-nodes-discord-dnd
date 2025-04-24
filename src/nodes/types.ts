@@ -1,4 +1,4 @@
 export interface ITriggerParameters {
-  type: string;
+  triggerType: string;
   event: string;
 }
