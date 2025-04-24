@@ -303,8 +303,50 @@ export class DiscordTrigger implements INodeType {
 
     // Set up event handler based on the selected event
     const setupEventHandler = (event: string) => {
-      client.on(event, (...args: any[]) => {
+      client.on(event, async (...args: any[]) => {
         const data: IDataObject = {};
+
+        // Helper to enrich user/member info with roles
+        const enrichMember = async (memberOrUser: any, guildId?: string) => {
+          if (!memberOrUser) return undefined;
+          // If already a GuildMember, extract roles
+          if (memberOrUser.roles && memberOrUser.guild) {
+            return {
+              ...memberOrUser,
+              roles: memberOrUser.roles.cache.map((role: any) => ({
+                id: role.id,
+                name: role.name,
+                color: role.color,
+                permissions: role.permissions?.bitfield,
+                position: role.position,
+                managed: role.managed,
+                mentionable: role.mentionable,
+              })),
+            };
+          }
+          // If only a User, try to fetch GuildMember if possible
+          if (guildId && memberOrUser.id && client.guilds?.cache?.has(guildId)) {
+            try {
+              const guild = client.guilds.cache.get(guildId);
+              const member = await guild?.members.fetch(memberOrUser.id);
+              if (member) {
+                return {
+                  ...member,
+                  roles: member.roles.cache.map((role: any) => ({
+                    id: role.id,
+                    name: role.name,
+                    color: role.color,
+                    permissions: role.permissions?.bitfield,
+                    position: role.position,
+                    managed: role.managed,
+                    mentionable: role.mentionable,
+                  })),
+                };
+              }
+            } catch {}
+          }
+          return memberOrUser;
+        };
 
         switch (event) {
           case "messageCreate":
@@ -313,6 +355,9 @@ export class DiscordTrigger implements INodeType {
           case "messageReactionRemoveAll":
           case "messageReactionRemoveEmoji":
             data.message = args[0];
+            if (args[0]?.member) {
+              data.member = await enrichMember(args[0].member, args[0]?.guildId || args[0]?.guild?.id);
+            }
             break;
 
           case "messageDeleteBulk":
@@ -322,11 +367,25 @@ export class DiscordTrigger implements INodeType {
           case "messageReactionAdd":
           case "messageReactionRemove":
             data.reaction = args[0];
-            data.user = args[1];
+            data.user = await enrichMember(args[1], args[0]?.message?.guildId || args[0]?.message?.guild?.id);
             break;
 
           case "typingStart":
             data.typing = args[0];
+            if (args[0]?.member) {
+              data.member = await enrichMember(args[0].member, args[0]?.guildId || args[0]?.guild?.id);
+            }
+            break;
+
+          case "guildMemberAdd":
+          case "guildMemberRemove":
+          case "guildMemberAvailable":
+            data.member = await enrichMember(args[0], args[0]?.guild?.id);
+            break;
+
+          case "guildMemberUpdate":
+            data.oldMember = await enrichMember(args[0], args[0]?.guild?.id);
+            data.newMember = await enrichMember(args[1], args[1]?.guild?.id);
             break;
 
           case "channelCreate":
@@ -456,17 +515,6 @@ export class DiscordTrigger implements INodeType {
           case "userUpdate":
             data.oldUser = args[0];
             data.newUser = args[1];
-            break;
-
-          case "guildMemberAdd":
-          case "guildMemberRemove":
-          case "guildMemberAvailable":
-            data.member = args[0];
-            break;
-
-          case "guildMemberUpdate":
-            data.oldMember = args[0];
-            data.newMember = args[1];
             break;
 
           case "guildMembersChunk":

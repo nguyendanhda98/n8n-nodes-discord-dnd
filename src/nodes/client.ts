@@ -1,18 +1,4 @@
-import { ActivityType, Client, GatewayIntentBits } from "discord.js";
-
-/**
- * Sets up the Discord client event listeners and status
- * @param client Discord client instance
- */
-export const setupClientEvents = (client: Client): void => {
-  // Set an activity status for the bot when ready
-  client.once("ready", () => {
-    console.log(`Discord bot logged in as ${client.user?.tag}`);
-    client.user?.setActivity("with n8n workflows", {
-      type: ActivityType.Playing,
-    });
-  });
-};
+import {Client, GatewayIntentBits } from "discord.js";
 
 /**
  * Initializes the Discord client, sets up events, and logs in
@@ -32,8 +18,6 @@ export const initializeDiscordClient = async (
   const client = new Client({
     intents: intents,
   });
-
-  setupClientEvents(client);
 
   // Login to Discord
   await client.login(token);
