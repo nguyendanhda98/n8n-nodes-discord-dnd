@@ -21,35 +21,6 @@ export class DiscordTrigger implements INodeType {
 
   methods = {
     loadOptions: {
-      async getServers(
-        this: ILoadOptionsFunctions
-      ): Promise<INodePropertyOptions[]> {
-        const credentials = (await this.getCredentials(
-          "discordApi"
-        )) as ICredentialDataDecryptedObject;
-        const client = await initializeDiscordClient(
-          credentials.botToken as string,
-          [GatewayIntentBits.Guilds]
-        );
-
-        // Wait for client to be ready
-        await new Promise<void>((resolve) => {
-          if (client.isReady()) resolve();
-          else client.once("ready", () => resolve());
-        });
-
-        const servers = client.guilds.cache.map((guild) => ({
-          name: guild.name,
-          value: guild.id,
-          description: `Server ID: ${guild.id}`,
-        }));
-
-        // Clean up client
-        client.destroy();
-
-        return servers;
-      },
-
       async getEvents(
         this: ILoadOptionsFunctions
       ): Promise<INodePropertyOptions[]> {
@@ -232,6 +203,9 @@ export class DiscordTrigger implements INodeType {
           GatewayIntentBits.GuildMessages,
           GatewayIntentBits.MessageContent,
           GatewayIntentBits.GuildMessageReactions,
+          GatewayIntentBits.GuildMembers,
+          GatewayIntentBits.DirectMessages,
+          GatewayIntentBits.DirectMessageReactions,
         ];
         break;
 
