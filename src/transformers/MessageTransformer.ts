@@ -1,7 +1,25 @@
 import { Message } from "discord.js";
 
-export function messageToJson(message: Message): object {
-  return {
+/**
+ * Fetches the referenced message and returns its content
+ * @param message The message that contains a reference to another message
+ * @returns The referenced message content or null if no reference exists
+ */
+export async function fetchReferencedMessage(message: Message): Promise<string | null> {
+  if (message.reference && message.reference.messageId) {
+    try {
+      const referencedMessage = await message.fetchReference();
+      return referencedMessage.content;
+    } catch (error) {
+      console.error('Error fetching referenced message:', error);
+      return null;
+    }
+  }
+  return null;
+}
+
+export function messageToJson(message: Message): any {
+  const n8nMessage: any = {
     id: message.id,
     content: message.content,
     channelId: message.channelId,
@@ -113,6 +131,14 @@ export function messageToJson(message: Message): object {
             avatar: message.mentions.repliedUser.avatar,
           }
         : null,
+      repliedMessage: message.reference && message.reference.messageId
+        ? {
+            id: message.reference.messageId,
+            channelId: message.reference.channelId,
+            guildId: message.reference.guildId,
+            content: null, // Will be populated if fetchReferencedMessage is called
+          }
+        : null,
       members:
         message.mentions?.members?.map((member: any) => ({
           id: member.id,
@@ -170,4 +196,6 @@ export function messageToJson(message: Message): object {
         }
       : null,
   };
+  return n8nMessage;
 }
+
