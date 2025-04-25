@@ -1,9 +1,8 @@
-const { src, dest } = require('gulp');
+const { src, dest } = require("gulp");
 
 // Copy icons to the dist folder
 function buildIcons() {
-  return src('./src/nodes/**/*.svg')
-    .pipe(dest('./dist/nodes/'));
+  return src("./src/assets/icons/**/*.svg").pipe(dest("./dist/nodes/"));
 }
 
-exports['build:icons'] = buildIcons;
+exports["build:icons"] = buildIcons;

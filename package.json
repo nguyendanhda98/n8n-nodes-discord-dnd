@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-discord-dnd",
-  "version": "0.1.56",
+  "version": "0.1.58",
   "description": "n8n node to create triggers for Discord events",
   "keywords": [
     "n8n",
