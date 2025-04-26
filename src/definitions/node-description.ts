@@ -3,7 +3,7 @@ import { INodeTypeDescription } from "n8n-workflow";
 export const nodeDescription: INodeTypeDescription = {
   displayName: "Discord Trigger",
   name: "discordTrigger",
-  icon: "file:discord.svg",
+  icon: "file:../assets/icon/discord.svg",
   group: ["trigger"],
   version: 1,
   description: "Starts the workflow when Discord events occur",
