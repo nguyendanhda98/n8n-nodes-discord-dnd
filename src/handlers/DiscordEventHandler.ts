@@ -1,9 +1,6 @@
 import { Client } from "discord.js";
 import { ITriggerFunctions, IDataObject } from "n8n-workflow";
-import {
-  messageToJson,
-  fetchReferencedMessage,
-} from "../transformers/MessageTransformer";
+import { messageToJson } from "../transformers/MessageTransformer";
 
 export class DiscordEventHandler {
   constructor(
@@ -11,10 +8,7 @@ export class DiscordEventHandler {
     private readonly triggerInstance: ITriggerFunctions
   ) {}
 
-  setupEventHandler(event: string) {
-    // Log bot status
-    this.setupStatusLogging();
-
+  async setupEventHandler(event: string) {
     // Handle main events
     this.client.on(event, async (...args: any[]) => {
       const data: IDataObject = {};
@@ -34,8 +28,6 @@ export class DiscordEventHandler {
             member?.roles.cache.map((role) => ({
               id: role.id,
               name: role.name,
-              color: role.color,
-              position: role.position,
             })) || [],
         };
       };
@@ -45,9 +37,9 @@ export class DiscordEventHandler {
         case "messageUpdate":
         case "messageDelete":
           const message = args[0];
-          const messageData = messageToJson(message);
+          const messageData = await messageToJson(message);
           data.message = messageData;
-          
+
           // Use the guild ID from the message when enriching the author
           if (message.author && message.guildId) {
             data.user = await enrichMember(message.author, message.guildId);
@@ -55,12 +47,6 @@ export class DiscordEventHandler {
             data.user = message.author;
           }
 
-          if (message.reference && messageData.mentions?.repliedMessage) {
-            const referencedContent = await fetchReferencedMessage(message);
-            if (referencedContent) {
-              messageData.mentions.repliedMessage.content = referencedContent;
-            }
-          }
           break;
 
         case "guildMemberAdd":
@@ -72,7 +58,7 @@ export class DiscordEventHandler {
 
         default:
           data.eventData = args;
-          
+
           // Try to extract user/member and guild info from the first argument
           const firstArg = args[0];
           if (firstArg) {
@@ -86,7 +72,7 @@ export class DiscordEventHandler {
               // User-like object, try to find in guilds
               const guilds = this.client.guilds.cache;
               let enrichedUser = null;
-              
+
               // Try to find user in any guild the bot is in
               for (const [, guild] of guilds) {
                 try {
@@ -99,7 +85,7 @@ export class DiscordEventHandler {
                   // Ignore errors, just try next guild
                 }
               }
-              
+
               data.user = enrichedUser || firstArg;
             }
           }
@@ -108,20 +94,6 @@ export class DiscordEventHandler {
       this.triggerInstance.emit([
         this.triggerInstance.helpers.returnJsonArray([data]),
       ]);
-    });
-  }
-
-  private setupStatusLogging() {
-    this.client.on("ready", () => {
-      console.log("Bot đã sẵn sàng! Đang chờ tin nhắn...");
-    });
-
-    this.client.on("debug", (info) => {
-      console.log("Debug Discord.js:", info);
-    });
-
-    this.client.on("error", (error) => {
-      console.error("Lỗi Discord.js:", error);
     });
   }
 }

@@ -6,7 +6,7 @@ import {
 } from "n8n-workflow";
 import { initializeDiscordClient } from "./client";
 import { nodeDescription } from "../definitions/node-description";
-import { ITriggerParameters } from "./types";
+import { ITriggerParameters } from "../Interfaces/types";
 import { methods } from "../definitions/DiscordEventDefinitions";
 import { getIntentsForTrigger } from "../definitions/DiscordIntentMapping";
 import { DiscordEventHandler } from "../handlers/DiscordEventHandler";
