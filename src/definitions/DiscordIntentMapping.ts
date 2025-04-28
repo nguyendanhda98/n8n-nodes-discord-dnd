@@ -21,11 +21,16 @@ export function getIntentsForTrigger(
       break;
 
     case "guild":
-      intents = [GatewayIntentBits.Guilds];
+      intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers];
+
       break;
 
     case "moderation":
-      intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildModeration];
+      intents = [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildModeration,
+        GatewayIntentBits.GuildMembers,
+      ];
       break;
 
     case "emojiSticker":
