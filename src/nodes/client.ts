@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, ClientOptions } from "discord.js";
 
 /**
  * Initializes the Discord client, sets up events, and logs in
@@ -9,15 +9,13 @@ import { Client, GatewayIntentBits } from "discord.js";
  */
 export const initializeDiscordClient = async (
   token: string,
-  intents: GatewayIntentBits[]
+  clientOptions: ClientOptions
 ): Promise<Client> => {
   if (!token) {
     throw new Error("No bot token provided in credentials!");
   }
 
-  const client = new Client({
-    intents,
-  });
+  const client = new Client(clientOptions);
 
   // Login to Discord
   await client.login(token);

@@ -1,10 +1,8 @@
-import { GatewayIntentBits } from "discord.js";
+import { GatewayIntentBits, ClientOptions, Partials } from "discord.js";
 
-export function getIntentsForTrigger(
-  triggerType: string,
-  event?: string
-): GatewayIntentBits[] {
+export function getclientOptions(triggerType: string): ClientOptions {
   let intents: GatewayIntentBits[] = [];
+  let partials: Partials[] = [];
   switch (triggerType) {
     case "message":
       intents = [
@@ -18,11 +16,18 @@ export function getIntentsForTrigger(
         GatewayIntentBits.DirectMessageTyping,
         GatewayIntentBits.GuildMessageTyping,
       ];
+      partials = [
+        Partials.User,
+        Partials.Channel,
+        Partials.Message,
+        Partials.Reaction,
+        Partials.GuildMember,
+      ];
       break;
 
     case "guild":
       intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers];
-
+      partials = [Partials.GuildMember];
       break;
 
     case "moderation":
@@ -31,10 +36,12 @@ export function getIntentsForTrigger(
         GatewayIntentBits.GuildModeration,
         GatewayIntentBits.GuildMembers,
       ];
+      partials = [Partials.GuildMember];
       break;
 
     case "emojiSticker":
       intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildExpressions];
+      partials = [];
       break;
 
     case "integrationWebhook":
@@ -43,18 +50,22 @@ export function getIntentsForTrigger(
         GatewayIntentBits.GuildIntegrations,
         GatewayIntentBits.GuildWebhooks,
       ];
+      partials = [];
       break;
 
     case "invite":
       intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildInvites];
+      partials = [];
       break;
 
     case "voice":
       intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildVoiceStates];
+      partials = [];
       break;
 
     case "presence":
       intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildPresences];
+      partials = [Partials.GuildMember];
       break;
 
     case "scheduledEvent":
@@ -62,25 +73,27 @@ export function getIntentsForTrigger(
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildScheduledEvents,
       ];
+      partials = [Partials.GuildScheduledEvent];
       break;
 
     case "interaction":
       intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildIntegrations];
+      partials = [];
       break;
 
     case "botStatus":
-      intents = []; // No intents needed for bot status events
+      intents = [];
+      partials = [];
       break;
 
     case "user":
-      intents =
-        event === "userUpdate"
-          ? [] // userUpdate doesn't need intents
-          : [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers];
+      intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers];
+      partials = [Partials.User, Partials.GuildMember];
       break;
 
     case "autoModeration":
       intents = [GatewayIntentBits.Guilds, GatewayIntentBits.GuildModeration];
+      partials = [];
       break;
 
     case "poll":
@@ -89,10 +102,11 @@ export function getIntentsForTrigger(
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMessagePolls,
       ];
+      partials = [Partials.Message];
       break;
 
     default:
       throw new Error(`Unsupported type: ${triggerType}`);
   }
-  return intents;
+  return { intents, partials };
 }

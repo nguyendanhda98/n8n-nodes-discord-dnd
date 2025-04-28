@@ -8,8 +8,9 @@ import { initializeDiscordClient } from "./client";
 import { nodeDescription } from "../definitions/node-description";
 import { ITriggerParameters } from "../Interfaces/types";
 import { methods } from "../definitions/DiscordEventDefinitions";
-import { getIntentsForTrigger } from "../definitions/DiscordIntentMapping";
+import { getclientOptions } from "../definitions/DiscordIntentMapping";
 import { DiscordEventHandler } from "../handlers/DiscordEventHandler";
+import { ClientOptions } from "discord.js";
 
 export class DiscordTrigger implements INodeType {
   description = nodeDescription;
@@ -25,13 +26,12 @@ export class DiscordTrigger implements INodeType {
       event: this.getNodeParameter("event", "messageCreate") as string,
     };
 
-    const intents = getIntentsForTrigger(
-      parameters.triggerType,
-      parameters.event
+    const clientOptions: ClientOptions = getclientOptions(
+      parameters.triggerType
     );
     const client = await initializeDiscordClient(
       credentials.botToken as string,
-      intents
+      clientOptions
     );
 
     const eventHandler = new DiscordEventHandler(client, this);
