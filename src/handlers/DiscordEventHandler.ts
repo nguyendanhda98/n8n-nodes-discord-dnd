@@ -71,7 +71,7 @@ export class DiscordEventHandler {
 
       switch (event) {
         // Message events
-        case "messageCreate":
+        case Events.MessageCreate:
           const message: Message = args[0];
           data.message = await messageToJson(message);
 
@@ -83,11 +83,11 @@ export class DiscordEventHandler {
           }
           break;
 
-        case "messageDelete":
+        case Events.MessageDelete:
           const deletedMessage: Message = args[0];
           data.message = { ...deletedMessage };
           break;
-        case "messageDeleteBulk":
+        case Events.MessageBulkDelete:
           const deletedMessages = args[0]; // Collection<Snowflake, Message>
           const channelMessageDeleteBulk: GuildTextBasedChannel = args[1]; // TextBasedChannel
 
@@ -112,15 +112,15 @@ export class DiscordEventHandler {
 
           break;
 
-        case "messageUpdate":
+        case Events.MessageUpdate:
           const oldMessage: Message = args[0];
           const newMessage: Message = args[1];
           data.oldMessage = { ...oldMessage };
           data.newMessage = { ...newMessage };
           break;
 
-        case "messageReactionAdd":
-        case "messageReactionRemove":
+        case Events.MessageReactionAdd:
+        case Events.MessageReactionRemove:
           const reaction: MessageReaction = args[0];
           const reactUser: User = args[1];
           data.reaction = { ...reaction };
@@ -130,12 +130,12 @@ export class DiscordEventHandler {
           );
           break;
 
-        case "messageReactionRemoveAll":
+        case Events.MessageReactionRemoveAll:
           const messageReactionRemoved: Message = args[0];
           data.message = { ...messageReactionRemoved };
           break;
 
-        case "messageReactionRemoveEmoji":
+        case Events.MessageReactionRemoveEmoji:
           const reactionMessageReactionRemoveEmoji: MessageReaction = args[0]; // MessageReaction
           console.log(
             `🚀 ~ messageReactionRemoveEmoji - Emoji ${reactionMessageReactionRemoveEmoji.emoji.name} removed from message ${reactionMessageReactionRemoveEmoji.message.id}`
@@ -161,7 +161,7 @@ export class DiscordEventHandler {
 
           break;
 
-        case "typingStart":
+        case Events.TypingStart:
           const typing: any = args[0];
           data.typing = { ...typing };
           if (typing.user) {
@@ -170,16 +170,16 @@ export class DiscordEventHandler {
           break;
 
         // Guild events
-        case "channelCreate":
+        case Events.ChannelCreate:
           const channel: GuildChannel = args[0];
           data.channel = { ...channel };
           break;
 
-        case "channelDelete":
+        case Events.ChannelDelete:
           const deletedChannel: GuildChannel = args[0];
           data.channel = { ...deletedChannel };
           break;
-        case "channelPinsUpdate":
+        case Events.ChannelPinsUpdate:
           const pinsChannel: TextBasedChannels = args[0]; // GuildChannel hoặc ThreadChannel
           const pinTimestamp: Date = args[1]; // Date
 
@@ -242,13 +242,13 @@ export class DiscordEventHandler {
             data.pinnedMessages = [];
           }
           break;
-        case "channelUpdate":
+        case Events.ChannelUpdate:
           const oldChannel: GuildChannel = args[0];
           const newChannel: GuildChannel = args[1];
           data.oldChannel = { ...oldChannel };
           data.newChannel = { ...newChannel };
           break;
-        case "guildAvailable":
+        case Events.GuildAvailable:
           const guildAvailable: Guild = args[0]; // Đối tượng Guild
 
           // Trích xuất thông tin chi tiết từ guild
@@ -288,7 +288,7 @@ export class DiscordEventHandler {
           };
           break;
 
-        case "guildCreate":
+        case Events.GuildCreate:
           const guildCreated = args[0]; // Guild
           console.log(
             `🚀 ~ guildCreate - Bot được thêm vào guild ${guildCreated.name} (ID: ${guildCreated.id})`
@@ -331,7 +331,7 @@ export class DiscordEventHandler {
           };
           break;
 
-        case "guildDelete":
+        case Events.GuildDelete:
           const guildDeleted = args[0]; // Guild hoặc PartialGuild
           console.log(
             `🚀 ~ guildDelete - Bot bị xóa khỏi guild ${
@@ -346,7 +346,7 @@ export class DiscordEventHandler {
           };
           break;
 
-        case "guildUnavailable":
+        case Events.GuildUnavailable:
           const guildUnavailable = args[0]; // Guild
           console.log(
             `🚀 ~ guildUnavailable - Guild ${guildUnavailable.name} (ID: ${guildUnavailable.id}) không khả dụng.`
@@ -359,7 +359,7 @@ export class DiscordEventHandler {
           };
           break;
 
-        case "guildUpdate":
+        case Events.GuildUpdate:
           const oldGuild = args[0]; // Guild trước khi thay đổi
           const newGuild = args[1]; // Guild sau khi thay đổi
           console.log(
@@ -401,14 +401,14 @@ export class DiscordEventHandler {
             };
           break;
 
-        case "roleCreate":
-        case "roleDelete":
+        case Events.GuildRoleCreate:
+        case Events.GuildRoleDelete:
           const role: Role = args[0];
           data.role = { ...role };
           data.guild = { ...role.guild };
           break;
 
-        case "roleUpdate":
+        case Events.GuildRoleUpdate:
           const oldRole: Role = args[0];
           const newRole: Role = args[1];
           data.oldRole = { ...oldRole };
@@ -416,12 +416,12 @@ export class DiscordEventHandler {
           data.guild = { ...newRole.guild };
           break;
 
-        case "stageInstanceCreate":
+        case Events.StageInstanceCreate:
           const stageInstanceCreated: StageInstance = args[0]; // StageInstance
           data.stageInstance = { ...stageInstanceCreated };
           break;
 
-        case "stageInstanceDelete":
+        case Events.StageInstanceDelete:
           const stageInstanceDeleted: StageInstance = args[0]; // StageInstance
 
           data.stageInstance = {
@@ -433,7 +433,7 @@ export class DiscordEventHandler {
           };
           break;
 
-        case "stageInstanceUpdate":
+        case Events.StageInstanceUpdate:
           const oldStageInstance: StageInstance | null = args[0]; // StageInstance trước khi thay đổi
           const newStageInstance: StageInstance = args[1]; // StageInstance sau khi thay đổi
 
@@ -477,16 +477,16 @@ export class DiscordEventHandler {
           }
           break;
 
-        case "threadCreate":
+        case Events.ThreadCreate:
           const threadCreate: ThreadChannel = args[0];
           data.thread = { ...threadCreate };
           break;
 
-        case "threadDelete":
+        case Events.ThreadDelete:
           const deletedThread: ThreadChannel = args[0];
           data.thread = { ...deletedThread };
           break;
-        case "threadListSync":
+        case Events.ThreadListSync:
           const syncedThreads = args[0]; // Collection<Snowflake, ThreadChannel>
           const channels = args[1]; // Collection<Snowflake, GuildChannel>
           const guildThreadListSync = args[2]; // Guild
@@ -517,7 +517,7 @@ export class DiscordEventHandler {
             createdTimestamp: thread.createdTimestamp,
           }));
 
-        case "threadMembersUpdate":
+        case Events.ThreadMembersUpdate:
           const addedMembers = args[0]; // Collection<Snowflake, ThreadMember>
           const removedMembers = args[1]; // Collection<Snowflake, ThreadMember>
           const threadMembersUpdate: ThreadChannel = args[2]; // ThreadChannel
@@ -581,7 +581,7 @@ export class DiscordEventHandler {
             );
           }
           break;
-        case "threadMemberUpdate":
+        case Events.ThreadMemberUpdate:
           const oldMember = args[0]; // ThreadMember trước khi thay đổi
           const newMember = args[1]; // ThreadMember sau khi thay đổi
           console.log(
@@ -635,7 +635,7 @@ export class DiscordEventHandler {
               });
           }
           break;
-        case "threadUpdate":
+        case Events.ThreadUpdate:
           const oldThread: ThreadChannel = args[0];
           const newThread: ThreadChannel = args[1];
           data.oldThread = { ...oldThread };
@@ -643,15 +643,15 @@ export class DiscordEventHandler {
           break;
 
         // Moderation events
-        case "guildBanAdd":
-        case "guildBanRemove":
+        case Events.GuildBanAdd:
+        case Events.GuildBanRemove:
           const ban: GuildBan = args[0];
           data.ban = { ...ban };
           data.guild = { ...ban.guild };
           data.user = await enrichMember(ban.user, ban.guild.id);
           break;
 
-        case "guildAuditLogEntryCreate":
+        case Events.GuildAuditLogEntryCreate:
           const auditLogEntry: GuildAuditLogsEntry = args[0]; // GuildAuditLogsEntry
           const guildAuditLogEntry: Guild = args[1]; // Guild
 
@@ -687,30 +687,30 @@ export class DiscordEventHandler {
           break;
 
         // Emoji & Sticker events
-        case "emojiCreate":
+        case Events.GuildEmojiCreate:
           const emojiCreated: Emoji = args[0]; // Emoji
           data.emoji = { ...emojiCreated };
-        case "emojiDelete":
+        case Events.GuildEmojiDelete:
           const emojiDeleted: Emoji = args[0]; // Emoji
           data.emoji = { ...emojiDeleted };
           break;
 
-        case "emojiUpdate":
+        case Events.GuildEmojiUpdate:
           const oldEmoji: Emoji = args[0]; // Emoji trước khi thay đổi
           const newEmoji: Emoji = args[1]; // Emoji sau khi thay đổi
           data.oldEmoji = { ...oldEmoji };
           data.newEmoji = { ...newEmoji };
           break;
 
-        case "stickerCreate":
+        case Events.GuildStickerCreate:
           const stickerCreated: Sticker = args[0]; // Sticker
           data.sticker = { ...stickerCreated };
           break;
-        case "stickerDelete":
+        case Events.GuildStickerDelete:
           const stickerDeleted: Sticker = args[0]; // Sticker
           data.sticker = { ...stickerDeleted };
           break;
-        case "stickerUpdate":
+        case Events.GuildStickerUpdate:
           const oldSticker: Sticker = args[0]; // Sticker trước khi thay đổi
           const newSticker: Sticker = args[1]; // Sticker sau khi thay đổi
           data.oldSticker = { ...oldSticker };
@@ -718,14 +718,14 @@ export class DiscordEventHandler {
           break;
 
         // Integration & Webhook events
-        case "guildIntegrationsUpdate":
+        case Events.GuildIntegrationsUpdate:
           const guildIntegrations: Guild = args[0]; // Guild
           data.guild = {
             id: guildIntegrations.id,
             name: guildIntegrations.name,
           };
           break;
-        case "webhooksUpdate":
+        case Events.WebhooksUpdate:
           const webhooksChannel:
             | TextChannel
             | NewsChannel
@@ -743,25 +743,25 @@ export class DiscordEventHandler {
           break;
 
         // Invite events
-        case "inviteCreate":
+        case Events.InviteCreate:
           const inviteCreated: Invite = args[0]; // Invite
           data.invite = { ...inviteCreated };
           data.guild = { ...inviteCreated.guild };
           break;
 
-        case "inviteDelete":
+        case Events.InviteDelete:
           const inviteDeleted: Invite = args[0]; // Invite
           data.invite = { ...inviteDeleted };
           data.guild = { ...inviteDeleted.guild };
           break;
 
         // Voice events
-        case "voiceChannelEffectSend":
+        case Events.VoiceChannelEffectSend:
           const voiceChannelEffectSend: VoiceChannelEffect = args[0]; // VoiceChannelEffectSend
           data.voiceChannelEffectSend = { ...voiceChannelEffectSend };
           break;
 
-        case "voiceStateUpdate":
+        case Events.VoiceStateUpdate:
           const oldVoiceState: VoiceState = args[0]; // VoiceState trước khi thay đổi
           const newVoiceState: VoiceState = args[1]; // VoiceState sau khi thay đổi
           data.oldVoiceState = { ...oldVoiceState };
@@ -769,7 +769,7 @@ export class DiscordEventHandler {
           break;
 
         // Presence events
-        case "presenceUpdate":
+        case Events.PresenceUpdate:
           const oldPresence: Presence | null = args[0];
           const newPresence: Presence = args[1];
           if (oldPresence) data.oldPresence = { ...oldPresence };
@@ -777,15 +777,15 @@ export class DiscordEventHandler {
           break;
 
         // Scheduled event events
-        case "guildScheduledEventCreate":
-        case "guildScheduledEventDelete":
-        case "guildScheduledEventUpdate":
+        case Events.GuildScheduledEventCreate:
+        case Events.GuildScheduledEventDelete:
+        case Events.GuildScheduledEventUpdate:
           const scheduledEvent: GuildScheduledEvent = args[0];
           data.scheduledEvent = { ...scheduledEvent };
           data.guild = { ...scheduledEvent.guild };
           break;
-        case "guildScheduledEventUserAdd":
-        case "guildScheduledEventUserRemove":
+        case Events.GuildScheduledEventUserAdd:
+        case Events.GuildScheduledEventUserRemove:
           const guildScheduledEvent: GuildScheduledEvent = args[0];
           const user: User = args[1];
           data.user = { ...user };
@@ -794,7 +794,7 @@ export class DiscordEventHandler {
           break;
 
         // Interaction events
-        case "interactionCreate":
+        case Events.InteractionCreate:
           const interaction: Interaction = args[0];
           data.interaction = { ...interaction };
 
@@ -920,7 +920,7 @@ export class DiscordEventHandler {
           data.rule = { ...ruleDeleted };
           break;
 
-        case "autoModerationRuleUpdate":
+        case Events.AutoModerationRuleUpdate:
           const oldRule: AutoModerationRule | null = args[0]; // AutoModerationRule trước khi thay đổi
           const newRule: AutoModerationRule = args[1]; // AutoModerationRule sau khi thay đổi
           data.oldRule = { ...oldRule };
