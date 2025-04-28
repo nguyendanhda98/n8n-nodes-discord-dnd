@@ -35,6 +35,12 @@ import {
   CloseEvent,
   GuildMembersChunk,
   PollAnswer,
+  MessageReactionEventDetails,
+  Typing,
+  DMChannel,
+  ThreadMember,
+  GuildEmoji,
+  BaseInteraction,
 } from "discord.js";
 import { ITriggerFunctions, IDataObject } from "n8n-workflow";
 import { messageToJson } from "../transformers/MessageTransformer";
@@ -62,9 +68,8 @@ export class DiscordEventHandler {
         return {
           ...memberOrUser,
           roles:
-            member?.roles.cache.map((role) => ({
-              id: role.id,
-              name: role.name,
+            member?.roles.cache.map((role: Role) => ({
+              ...role,
             })) || [],
         };
       };
@@ -79,7 +84,7 @@ export class DiscordEventHandler {
           if (message.author && message.guildId) {
             data.user = await enrichMember(message.author, message.guildId);
           } else {
-            data.user = message.author;
+            data.user = { ...message.author };
           }
           break;
 
@@ -87,24 +92,19 @@ export class DiscordEventHandler {
           const deletedMessage: Message = args[0];
           data.message = { ...deletedMessage };
           break;
+
         case Events.MessageBulkDelete:
           const deletedMessages = args[0]; // Collection<Snowflake, Message>
           const channelMessageDeleteBulk: GuildTextBasedChannel = args[1]; // TextBasedChannel
 
           // Trích xuất thông tin kênh
           data.channel = {
-            id: channelMessageDeleteBulk.id,
-            name: channelMessageDeleteBulk.name || "DM", // DM channels không có name
-            guildId: channelMessageDeleteBulk.guildId || null,
-            type: channelMessageDeleteBulk.type,
+            ...channelMessageDeleteBulk,
           };
 
           // Trích xuất danh sách tin nhắn bị xóa
           data.deletedMessages = deletedMessages.map((message: Message) => ({
-            id: message.id,
-            content: message.content || "", // Nội dung tin nhắn (nếu có)
-            authorId: message.author?.id,
-            createdTimestamp: message.createdTimestamp,
+            ...message,
           }));
 
           // Tổng số tin nhắn bị xóa
@@ -121,51 +121,42 @@ export class DiscordEventHandler {
 
         case Events.MessageReactionAdd:
         case Events.MessageReactionRemove:
-          const reaction: MessageReaction = args[0];
+          const messageReaction: MessageReaction = args[0];
           const reactUser: User = args[1];
-          data.reaction = { ...reaction };
+          const details: MessageReactionEventDetails = args[2]; // MessageReactionEventDetails
+          data.messageReaction = { ...messageReaction };
           data.user = await enrichMember(
             reactUser,
-            reaction.message.guildId || undefined
+            messageReaction.message.guildId || undefined
           );
+          data.details = { ...details };
           break;
 
         case Events.MessageReactionRemoveAll:
           const messageReactionRemoved: Message = args[0];
+          const reactions = args[1]; // Collection<Snowflake, MessageReaction>
           data.message = { ...messageReactionRemoved };
+          data.reactions = reactions.map((reaction: MessageReaction) => ({
+            ...reaction,
+          }));
+
           break;
 
         case Events.MessageReactionRemoveEmoji:
           const reactionMessageReactionRemoveEmoji: MessageReaction = args[0]; // MessageReaction
-          console.log(
-            `🚀 ~ messageReactionRemoveEmoji - Emoji ${reactionMessageReactionRemoveEmoji.emoji.name} removed from message ${reactionMessageReactionRemoveEmoji.message.id}`
-          );
 
           // Trích xuất thông tin tin nhắn và reaction
           data.reaction = {
-            emoji: {
-              id: reactionMessageReactionRemoveEmoji.emoji.id, // ID của emoji (null nếu là emoji Unicode)
-              name: reactionMessageReactionRemoveEmoji.emoji.name, // Tên emoji (ví dụ: "👍" hoặc "custom_emoji")
-              animated:
-                reactionMessageReactionRemoveEmoji.emoji.animated || false,
-            },
-            message: {
-              id: reactionMessageReactionRemoveEmoji.message.id,
-              channelId: reactionMessageReactionRemoveEmoji.message.channelId,
-              guildId:
-                reactionMessageReactionRemoveEmoji.message.guildId || null,
-              content: reactionMessageReactionRemoveEmoji.message.content || "",
-              authorId: reactionMessageReactionRemoveEmoji.message.author?.id,
-            },
+            ...reactionMessageReactionRemoveEmoji,
           };
 
           break;
 
         case Events.TypingStart:
-          const typing: any = args[0];
+          const typing: Typing = args[0];
           data.typing = { ...typing };
           if (typing.user) {
-            data.user = await enrichMember(typing.user, typing.guildId);
+            data.user = await enrichMember(typing.user);
           }
           break;
 
@@ -176,7 +167,7 @@ export class DiscordEventHandler {
           break;
 
         case Events.ChannelDelete:
-          const deletedChannel: GuildChannel = args[0];
+          const deletedChannel: DMChannel | GuildChannel = args[0];
           data.channel = { ...deletedChannel };
           break;
         case Events.ChannelPinsUpdate:
@@ -230,11 +221,8 @@ export class DiscordEventHandler {
             }
 
             // Lưu toàn bộ danh sách tin nhắn ghim (nếu cần)
-            data.pinnedMessages = pinnedMessages.map((message: any) => ({
-              id: message.id,
-              content: message.content,
-              authorId: message.author?.id,
-              createdTimestamp: message.createdTimestamp,
+            data.pinnedMessages = pinnedMessages.map((message: Message) => ({
+              ...message,
             }));
           } catch (error) {
             console.error("Lỗi khi fetch tin nhắn ghim:", error);
@@ -243,8 +231,8 @@ export class DiscordEventHandler {
           }
           break;
         case Events.ChannelUpdate:
-          const oldChannel: GuildChannel = args[0];
-          const newChannel: GuildChannel = args[1];
+          const oldChannel: DMChannel | GuildChannel = args[0];
+          const newChannel: DMChannel | GuildChannel = args[1];
           data.oldChannel = { ...oldChannel };
           data.newChannel = { ...newChannel };
           break;
@@ -253,33 +241,18 @@ export class DiscordEventHandler {
 
           // Trích xuất thông tin chi tiết từ guild
           data.guild = {
-            id: guildAvailable.id,
-            name: guildAvailable.name,
-            icon: guildAvailable.icon,
-            description: guildAvailable.description,
-            memberCount: guildAvailable.memberCount,
-            ownerId: guildAvailable.ownerId,
-            joinedTimestamp: guildAvailable.joinedTimestamp,
-            available: guildAvailable.available, // Phải là true trong sự kiện guildAvailable
+            ...guildAvailable,
             channels: guildAvailable.channels.cache.map((channel: any) => ({
-              id: channel.id,
-              name: channel.name,
-              type: channel.type,
+              ...channel,
             })),
             roles: guildAvailable.roles.cache.map((role: Role) => ({
-              id: role.id,
-              name: role.name,
-              color: role.color,
-              permissions: role.permissions?.bitfield,
+              ...role,
             })),
             // Nếu cần, fetch owner của guild
             owner: await guildAvailable
               .fetchOwner()
               .then((owner: GuildMember) => ({
-                id: owner.id,
-                username: owner.user?.username,
-                globalName: owner.user?.globalName,
-                nickname: owner.nickname,
+                ...owner,
               }))
               .catch((error: any) => {
                 console.error("Lỗi khi fetch owner:", error);
@@ -295,34 +268,19 @@ export class DiscordEventHandler {
           );
 
           data.guild = {
-            id: guildCreated.id,
-            name: guildCreated.name,
-            icon: guildCreated.icon,
-            description: guildCreated.description,
-            memberCount: guildCreated.memberCount,
-            ownerId: guildCreated.ownerId,
-            joinedTimestamp: guildCreated.joinedTimestamp,
-            available: guildCreated.available,
+            ...guildCreated,
             channels: guildCreated.channels.cache.map(
               (channel: GuildChannel) => ({
-                id: channel.id,
-                name: channel.name,
-                type: channel.type,
+                ...channel,
               })
             ),
             roles: guildCreated.roles.cache.map((role: Role) => ({
-              id: role.id,
-              name: role.name,
-              color: role.color,
-              permissions: role.permissions?.bitfield,
+              ...role,
             })),
             owner: await guildCreated
               .fetchOwner()
               .then((owner: GuildMember) => ({
-                id: owner.id,
-                username: owner.user?.username,
-                globalName: owner.user?.globalName,
-                nickname: owner.nickname,
+                ...owner,
               }))
               .catch((error: any) => {
                 console.error("Lỗi khi fetch owner:", error);
@@ -332,55 +290,30 @@ export class DiscordEventHandler {
           break;
 
         case Events.GuildDelete:
-          const guildDeleted = args[0]; // Guild hoặc PartialGuild
-          console.log(
-            `🚀 ~ guildDelete - Bot bị xóa khỏi guild ${
-              guildDeleted.name || "unknown"
-            } (ID: ${guildDeleted.id})`
-          );
+          const guildDeleted: Guild = args[0]; // Guild hoặc PartialGuild
 
           data.guild = {
-            id: guildDeleted.id,
-            name: guildDeleted.name || "unknown", // PartialGuild có thể không có name
-            available: guildDeleted.available || false, // Có thể là false nếu guild không khả dụng
+            ...guildDeleted,
           };
           break;
 
         case Events.GuildUnavailable:
-          const guildUnavailable = args[0]; // Guild
-          console.log(
-            `🚀 ~ guildUnavailable - Guild ${guildUnavailable.name} (ID: ${guildUnavailable.id}) không khả dụng.`
-          );
+          const guildUnavailable: Guild = args[0]; // Guild
 
           data.guild = {
-            id: guildUnavailable.id,
-            name: guildUnavailable.name,
-            available: guildUnavailable.available, // Sẽ là false
+            ...guildUnavailable,
           };
           break;
 
         case Events.GuildUpdate:
-          const oldGuild = args[0]; // Guild trước khi thay đổi
-          const newGuild = args[1]; // Guild sau khi thay đổi
-          console.log(
-            `🚀 ~ guildUpdate - Guild ${oldGuild.name} (ID: ${oldGuild.id}) đã được cập nhật.`
-          );
+          const oldGuild: Guild = args[0]; // Guild trước khi thay đổi
+          const newGuild: Guild = args[1]; // Guild sau khi thay đổi
 
           data.oldGuild = {
-            id: oldGuild.id,
-            name: oldGuild.name,
-            icon: oldGuild.icon,
-            description: oldGuild.description,
-            memberCount: oldGuild.memberCount,
-            ownerId: oldGuild.ownerId,
+            ...oldGuild,
           };
           data.newGuild = {
-            id: newGuild.id,
-            name: newGuild.name,
-            icon: newGuild.icon,
-            description: newGuild.description,
-            memberCount: newGuild.memberCount,
-            ownerId: newGuild.ownerId,
+            ...newGuild,
           };
           // So sánh thay đổi (ví dụ: log những thay đổi chính)
           data.changes = {};
@@ -405,7 +338,6 @@ export class DiscordEventHandler {
         case Events.GuildRoleDelete:
           const role: Role = args[0];
           data.role = { ...role };
-          data.guild = { ...role.guild };
           break;
 
         case Events.GuildRoleUpdate:
@@ -413,24 +345,12 @@ export class DiscordEventHandler {
           const newRole: Role = args[1];
           data.oldRole = { ...oldRole };
           data.newRole = { ...newRole };
-          data.guild = { ...newRole.guild };
           break;
 
         case Events.StageInstanceCreate:
-          const stageInstanceCreated: StageInstance = args[0]; // StageInstance
-          data.stageInstance = { ...stageInstanceCreated };
-          break;
-
         case Events.StageInstanceDelete:
-          const stageInstanceDeleted: StageInstance = args[0]; // StageInstance
-
-          data.stageInstance = {
-            id: stageInstanceDeleted.id,
-            channelId: stageInstanceDeleted.channelId,
-            guildId: stageInstanceDeleted.guildId,
-            topic: stageInstanceDeleted.topic,
-            privacyLevel: stageInstanceDeleted.privacyLevel,
-          };
+          const stageInstance: StageInstance = args[0]; // StageInstance
+          data.stageInstance = { ...stageInstance };
           break;
 
         case Events.StageInstanceUpdate:
@@ -439,21 +359,12 @@ export class DiscordEventHandler {
 
           data.oldStageInstance = oldStageInstance
             ? {
-                id: oldStageInstance.id,
-                channelId: oldStageInstance.channelId,
-                guildId: oldStageInstance.guildId,
-                topic: oldStageInstance.topic,
-                privacyLevel: oldStageInstance.privacyLevel,
+                ...oldStageInstance,
               }
             : null;
 
           data.newStageInstance = {
-            id: newStageInstance.id,
-            channelId: newStageInstance.channelId,
-            guildId: newStageInstance.guildId,
-            topic: newStageInstance.topic,
-            privacyLevel: newStageInstance.privacyLevel,
-            discoverableDisabled: newStageInstance.discoverableDisabled,
+            ...newStageInstance,
           };
           // So sánh thay đổi
           data.changes = {};
@@ -479,7 +390,9 @@ export class DiscordEventHandler {
 
         case Events.ThreadCreate:
           const threadCreate: ThreadChannel = args[0];
+          const newlyCreated: boolean = args[1];
           data.thread = { ...threadCreate };
+          data.newlyCreated = newlyCreated; // true nếu thread mới được tạo
           break;
 
         case Events.ThreadDelete:
@@ -488,152 +401,48 @@ export class DiscordEventHandler {
           break;
         case Events.ThreadListSync:
           const syncedThreads = args[0]; // Collection<Snowflake, ThreadChannel>
-          const channels = args[1]; // Collection<Snowflake, GuildChannel>
-          const guildThreadListSync = args[2]; // Guild
-          console.log(
-            `🚀 ~ threadListSync - Synced ${syncedThreads.size} threads in guild ${guildThreadListSync.name} (ID: ${guildThreadListSync.id})`
-          );
-
-          // Trích xuất thông tin guild
-          data.guild = {
-            id: guildThreadListSync.id,
-            name: guildThreadListSync.name,
-          };
-
-          // Trích xuất danh sách kênh
-          data.channels = channels.map((channel: GuildChannel) => ({
-            id: channel.id,
-            name: channel.name,
-            type: channel.type,
-          }));
+          const guildThreadListSync: Guild = args[1]; // Guild
 
           // Trích xuất danh sách thread được đồng bộ
           data.syncedThreads = syncedThreads.map((thread: ThreadChannel) => ({
-            id: thread.id,
-            name: thread.name,
-            channelId: thread.parentId,
-            guildId: thread.guildId,
-            memberCount: thread.memberCount,
-            createdTimestamp: thread.createdTimestamp,
+            ...thread,
           }));
+          data.guild = { ...guildThreadListSync };
+          break;
 
         case Events.ThreadMembersUpdate:
           const addedMembers = args[0]; // Collection<Snowflake, ThreadMember>
           const removedMembers = args[1]; // Collection<Snowflake, ThreadMember>
           const threadMembersUpdate: ThreadChannel = args[2]; // ThreadChannel
-          console.log(
-            `🚀 ~ threadMembersUpdate - Thread ${threadMembersUpdate.name} (ID: ${threadMembersUpdate.id}) updated members.`
-          );
 
           // Trích xuất thông tin thread
           data.thread = {
-            id: threadMembersUpdate.id,
-            name: threadMembersUpdate.name,
-            channelId: threadMembersUpdate.parentId, // ID của kênh cha
-            guildId: threadMembersUpdate.guildId,
-            memberCount: threadMembersUpdate.memberCount,
+            ...threadMembersUpdate,
           };
 
           // Trích xuất danh sách thành viên được thêm
           data.addedMembers = addedMembers.map((member: GuildMember) => ({
-            id: member.id,
-            userId: member.user,
+            ...member,
           }));
 
           // Trích xuất danh sách thành viên bị xóa
           data.removedMembers = removedMembers.map((member: GuildMember) => ({
-            id: member.id,
-            user: member.user,
+            ...member,
           }));
 
-          // Nếu cần, fetch thông tin chi tiết của thành viên (yêu cầu GUILD_MEMBERS intent)
-          if (
-            threadMembersUpdate.guild &&
-            (addedMembers.size > 0 || removedMembers.size > 0)
-          ) {
-            data.addedMembersDetails = await Promise.all(
-              addedMembers.map(async (member: GuildMember) => ({
-                id: member.id,
-                user: await thread.guild.members
-                  .fetch(member.user)
-                  .then((m: GuildMember) => ({
-                    id: m.id,
-                    username: m.user?.username,
-                    globalName: m.user?.globalName,
-                    nickname: m.nickname,
-                  }))
-                  .catch(() => null),
-              }))
-            );
-            data.removedMembersDetails = await Promise.all(
-              removedMembers.map(async (member: GuildMember) => ({
-                id: member.id,
-                user: await thread.guild.members
-                  .fetch(member.user)
-                  .then((m: GuildMember) => ({
-                    id: m.id,
-                    username: m.user?.username,
-                    globalName: m.user?.globalName,
-                    nickname: m.nickname,
-                  }))
-                  .catch(() => null),
-              }))
-            );
-          }
           break;
         case Events.ThreadMemberUpdate:
-          const oldMember = args[0]; // ThreadMember trước khi thay đổi
-          const newMember = args[1]; // ThreadMember sau khi thay đổi
-          console.log(
-            `🚀 ~ threadMemberUpdate - Thread member updated in thread ${newMember.thread.id}`
-          );
-
-          // Trích xuất thông tin thread
-          const thread = newMember.thread;
-          data.thread = {
-            id: thread.id,
-            name: thread.name,
-            channelId: thread.parentId, // ID của kênh cha
-            guildId: thread.guildId,
-            memberCount: thread.memberCount,
-          };
+          const oldMember: ThreadMember = args[0]; // ThreadMember trước khi thay đổi
+          const newMember: ThreadMember = args[1]; // ThreadMember sau khi thay đổi
 
           // Trích xuất thông tin thành viên trước và sau khi thay đổi
           data.oldMember = {
-            id: oldMember.id,
-            userId: oldMember.userId,
-            threadId: oldMember.threadId,
+            ...oldMember,
           };
           data.newMember = {
-            id: newMember.id,
-            userId: newMember.userId,
-            threadId: newMember.threadId,
+            ...newMember,
           };
 
-          // So sánh thay đổi (nếu có)
-          data.changes = {};
-          // Hiện tại ThreadMember không có nhiều thuộc tính có thể thay đổi, nhưng bạn có thể thêm logic so sánh nếu Discord cập nhật thêm tính năng
-          // Ví dụ: if (oldMember.someProperty !== newMember.someProperty) { ... }
-
-          // Fetch thông tin chi tiết của thành viên (nếu cần)
-          if (thread.guild) {
-            data.memberDetails = await thread.guild.members
-              .fetch(newMember.userId)
-              .then((member: GuildMember) => ({
-                id: member.id,
-                username: member.user?.username,
-                globalName: member.user?.globalName,
-                nickname: member.nickname,
-                roles: member.roles.cache.map((role) => ({
-                  id: role.id,
-                  name: role.name,
-                })),
-              }))
-              .catch((error: any) => {
-                console.error("Lỗi khi fetch member:", error);
-                return null;
-              });
-          }
           break;
         case Events.ThreadUpdate:
           const oldThread: ThreadChannel = args[0];
@@ -647,8 +456,6 @@ export class DiscordEventHandler {
         case Events.GuildBanRemove:
           const ban: GuildBan = args[0];
           data.ban = { ...ban };
-          data.guild = { ...ban.guild };
-          data.user = await enrichMember(ban.user, ban.guild.id);
           break;
 
         case Events.GuildAuditLogEntryCreate:
@@ -657,13 +464,7 @@ export class DiscordEventHandler {
 
           // Trích xuất thông tin từ audit log entry
           data.auditLogEntry = {
-            id: auditLogEntry.id,
-            guildId: guildAuditLogEntry.id,
-            action: auditLogEntry.action, // Loại hành động (MESSAGE_DELETE, MEMBER_KICK, v.v.)
-            executorId: auditLogEntry.executorId, // ID của người thực hiện hành động
-            targetId: auditLogEntry.targetId, // ID của mục tiêu (thành viên, tin nhắn, kênh, v.v.)
-            reason: auditLogEntry.reason || null, // Lý do (nếu có)
-            createdTimestamp: auditLogEntry.createdTimestamp,
+            ...auditLogEntry,
           };
 
           // Fetch thông tin chi tiết của người thực hiện hành động (executor)
@@ -673,43 +474,37 @@ export class DiscordEventHandler {
                 auditLogEntry.executorId
               );
               data.executor = {
-                id: executor.id,
-                username: executor.username,
-                globalName: executor.globalName,
-                tag: executor.tag,
+                ...executor,
               };
             } catch (error) {
               console.error("Lỗi khi fetch executor:", error);
               data.executor = null;
             }
           }
+          data.guildAuditLogEntry = { ...guildAuditLogEntry };
 
           break;
 
         // Emoji & Sticker events
         case Events.GuildEmojiCreate:
-          const emojiCreated: Emoji = args[0]; // Emoji
-          data.emoji = { ...emojiCreated };
         case Events.GuildEmojiDelete:
-          const emojiDeleted: Emoji = args[0]; // Emoji
-          data.emoji = { ...emojiDeleted };
+          const emoji: GuildEmoji = args[0]; // Emoji
+          data.emoji = { ...emoji };
           break;
 
         case Events.GuildEmojiUpdate:
-          const oldEmoji: Emoji = args[0]; // Emoji trước khi thay đổi
-          const newEmoji: Emoji = args[1]; // Emoji sau khi thay đổi
+          const oldEmoji: GuildEmoji = args[0]; // Emoji trước khi thay đổi
+          const newEmoji: GuildEmoji = args[1]; // Emoji sau khi thay đổi
           data.oldEmoji = { ...oldEmoji };
           data.newEmoji = { ...newEmoji };
           break;
 
         case Events.GuildStickerCreate:
-          const stickerCreated: Sticker = args[0]; // Sticker
-          data.sticker = { ...stickerCreated };
-          break;
         case Events.GuildStickerDelete:
-          const stickerDeleted: Sticker = args[0]; // Sticker
-          data.sticker = { ...stickerDeleted };
+          const sticker: Sticker = args[0]; // Sticker
+          data.sticker = { ...sticker };
           break;
+
         case Events.GuildStickerUpdate:
           const oldSticker: Sticker = args[0]; // Sticker trước khi thay đổi
           const newSticker: Sticker = args[1]; // Sticker sau khi thay đổi
@@ -721,8 +516,7 @@ export class DiscordEventHandler {
         case Events.GuildIntegrationsUpdate:
           const guildIntegrations: Guild = args[0]; // Guild
           data.guild = {
-            id: guildIntegrations.id,
-            name: guildIntegrations.name,
+            ...guildIntegrations,
           };
           break;
         case Events.WebhooksUpdate:
@@ -736,23 +530,14 @@ export class DiscordEventHandler {
           data.webhooksChannel = {
             ...webhooksChannel,
           };
-          data.guild = {
-            id: webhooksChannel.guildId,
-            name: webhooksChannel.guild.name,
-          };
+
           break;
 
         // Invite events
         case Events.InviteCreate:
+        case Events.InviteDelete:
           const inviteCreated: Invite = args[0]; // Invite
           data.invite = { ...inviteCreated };
-          data.guild = { ...inviteCreated.guild };
-          break;
-
-        case Events.InviteDelete:
-          const inviteDeleted: Invite = args[0]; // Invite
-          data.invite = { ...inviteDeleted };
-          data.guild = { ...inviteDeleted.guild };
           break;
 
         // Voice events
@@ -772,17 +557,28 @@ export class DiscordEventHandler {
         case Events.PresenceUpdate:
           const oldPresence: Presence | null = args[0];
           const newPresence: Presence = args[1];
-          if (oldPresence) data.oldPresence = { ...oldPresence };
+          data.oldPresence = oldPresence
+            ? {
+                ...oldPresence,
+              }
+            : null;
           data.newPresence = { ...newPresence };
           break;
 
         // Scheduled event events
         case Events.GuildScheduledEventCreate:
         case Events.GuildScheduledEventDelete:
+          const guildScheduled: GuildScheduledEvent = args[0]; // GuildScheduledEvent
+          data.guildScheduledEvent = { ...guildScheduled };
+          data.guild = { ...guildScheduled.guild };
+          break;
         case Events.GuildScheduledEventUpdate:
-          const scheduledEvent: GuildScheduledEvent = args[0];
-          data.scheduledEvent = { ...scheduledEvent };
-          data.guild = { ...scheduledEvent.guild };
+          const oldGuildScheduledEvent: GuildScheduledEvent | null = args[0]; // GuildScheduledEvent trước khi thay đổi
+          const newGuildScheduledEvent: GuildScheduledEvent = args[1]; // GuildScheduledEvent sau khi thay đổi
+          data.oldGuildScheduledEvent = oldGuildScheduledEvent
+            ? { ...oldGuildScheduledEvent }
+            : null;
+          data.newGuildScheduledEvent = { ...newGuildScheduledEvent };
           break;
         case Events.GuildScheduledEventUserAdd:
         case Events.GuildScheduledEventUserRemove:
@@ -790,27 +586,13 @@ export class DiscordEventHandler {
           const user: User = args[1];
           data.user = { ...user };
           data.guildScheduledEvent = { ...guildScheduledEvent };
-          data.guild = { ...guildScheduledEvent.guild };
           break;
 
         // Interaction events
         case Events.InteractionCreate:
-          const interaction: Interaction = args[0];
+          const interaction: BaseInteraction = args[0];
           data.interaction = { ...interaction };
 
-          if (interaction.guild) {
-            data.guild = {
-              id: interaction.guild.id,
-              name: interaction.guild.name,
-            };
-          }
-
-          if (interaction.user) {
-            data.user = await enrichMember(
-              interaction.user,
-              interaction.guildId || undefined
-            );
-          }
           break;
         case Events.ApplicationCommandPermissionsUpdate:
           const dataApp: ApplicationCommandPermissionsUpdateData = args[0]; // ApplicationCommandPermissionsUpdateData
@@ -851,19 +633,19 @@ export class DiscordEventHandler {
           const ShardReadyId: number = args[0];
           const unavailableGuilds: any | null = args[1];
           data.ShardReadyId = ShardReadyId;
-          data.unavailableGuilds = unavailableGuilds;
+          data.unavailableGuilds = { ...unavailableGuilds };
           break;
 
         case Events.ShardReconnecting:
           const ShardReconnectingId: number = args[0];
-          data.ShardReconnectingId = ShardReconnectingId;
+          data.id = ShardReconnectingId;
           break;
 
         case Events.ShardResume:
           const ShardResumeId: number = args[0];
           const replayedEvents: number = args[1];
-          data.ShardResumeId = ShardResumeId;
-          data.replayedEvents = replayedEvents;
+          data.id = ShardResumeId;
+          data.replayedEvent = replayedEvents;
           break;
 
         // User event
@@ -876,21 +658,17 @@ export class DiscordEventHandler {
 
         // Member events
         case Events.GuildMemberAdd:
-          const memberAdded: GuildMember = args[0]; // GuildMember
-          data.member = { ...memberAdded };
-          break;
         case Events.GuildMemberAvailable:
-          const memberAvailable: GuildMember = args[0]; // GuildMember
-          data.member = { ...memberAvailable };
-          break;
         case Events.GuildMemberRemove:
-          const memberRemoved: GuildMember = args[0]; // GuildMember
-          data.member = { ...memberRemoved };
+          const member: GuildMember = args[0]; // GuildMember
+          data.member = { ...member };
           break;
+
         case Events.GuildMemberUpdate:
-          const memberUpdate: GuildMember = args[0];
-          data.member = { ...memberUpdate };
-          data.guild = { ...memberUpdate.guild };
+          const oldMemberUpdate: GuildMember = args[0]; // GuildMember trước khi thay đổi
+          const newMemberUpdate: GuildMember = args[1]; // GuildMember sau khi thay đổi
+          data.oldMemberUpdate = { ...oldMemberUpdate };
+          data.newMemberUpdate = { ...newMemberUpdate };
           break;
 
         case Events.GuildMembersChunk:
@@ -907,17 +685,11 @@ export class DiscordEventHandler {
           const action: AutoModerationActionExecution = args[0];
           data.action = { ...action };
 
-          if (action.guild) {
-            data.guild = { ...action.guild };
-          }
           break;
         case Events.AutoModerationRuleCreate:
+        case Events.AutoModerationRuleDelete:
           const ruleCreated: AutoModerationRule = args[0];
           data.rule = { ...ruleCreated };
-          break;
-        case Events.AutoModerationRuleDelete:
-          const ruleDeleted: AutoModerationRule = args[0];
-          data.rule = { ...ruleDeleted };
           break;
 
         case Events.AutoModerationRuleUpdate:
@@ -929,18 +701,13 @@ export class DiscordEventHandler {
 
         // Poll event
         case Events.MessagePollVoteAdd:
+        case Events.MessagePollVoteRemove:
           const pollVoteAdd: PollAnswer = args[0]; // PollVote
           const userId: string = args[1]; // User ID
           data.pollVote = { ...pollVoteAdd };
           data.userId = userId;
           break;
 
-        case Events.MessagePollVoteRemove:
-          const pollVoteRemove: PollAnswer = args[0]; // PollVote
-          const userIdRemove: string = args[1]; // User ID
-          data.pollVote = { ...pollVoteRemove };
-          data.userId = userIdRemove;
-          break;
         default:
           data.eventData = args;
           break;
