@@ -24,6 +24,6 @@ export async function messageToJson(message: Message): Promise<any> {
       ...message.mentions,
     },
 
-    repliedMessage,
+    repliedMessage: { ...repliedMessage },
   };
 }
