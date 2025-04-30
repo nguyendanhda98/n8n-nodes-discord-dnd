@@ -1,6 +1,6 @@
 import { INodeTypeDescription } from "n8n-workflow";
 
-export const nodeDescription: INodeTypeDescription = {
+export const DiscordTriggerDescription: INodeTypeDescription = {
   displayName: "Discord Trigger",
   name: "discordTrigger",
   icon: "file:../assets/icon/discord.svg",

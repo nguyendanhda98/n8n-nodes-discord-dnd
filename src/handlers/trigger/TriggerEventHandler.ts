@@ -16,7 +16,6 @@ import {
   VoiceState,
   Presence,
   GuildScheduledEvent,
-  Interaction,
   AutoModerationRule,
   AutoModerationActionExecution,
   GuildAuditLogsEntry,
@@ -43,9 +42,9 @@ import {
   BaseInteraction,
 } from "discord.js";
 import { ITriggerFunctions, IDataObject } from "n8n-workflow";
-import { messageToJson } from "../transformers/MessageTransformer";
+import { messageToJson } from "../../transformers/MessageTransformer";
 
-export class DiscordEventHandler {
+export class TriggerEventHandler {
   constructor(
     private readonly client: Client,
     private readonly triggerInstance: ITriggerFunctions

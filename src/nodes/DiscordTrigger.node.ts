@@ -5,16 +5,16 @@ import {
   ICredentialDataDecryptedObject,
 } from "n8n-workflow";
 import { initializeDiscordClient } from "./client";
-import { nodeDescription } from "../definitions/node-description";
+import { DiscordTriggerDescription } from "../definitions/node-description/DiscordTriggerDescription";
 import { ITriggerParameters } from "../Interfaces/types";
-import { methods } from "../definitions/DiscordEventDefinitions";
+import { DiscordTriggerMethods } from "../definitions/node-methods/DiscordEventMethods";
 import { getclientOptions } from "../definitions/DiscordIntentMapping";
-import { DiscordEventHandler } from "../handlers/DiscordEventHandler";
+import { TriggerEventHandler } from "../handlers/trigger/TriggerEventHandler";
 import { ClientOptions } from "discord.js";
 
 export class DiscordTrigger implements INodeType {
-  description = nodeDescription;
-  methods = methods;
+  description = DiscordTriggerDescription;
+  methods = DiscordTriggerMethods;
 
   async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
     const credentials = (await this.getCredentials(
@@ -34,7 +34,7 @@ export class DiscordTrigger implements INodeType {
       clientOptions
     );
 
-    const eventHandler = new DiscordEventHandler(client, this);
+    const eventHandler = new TriggerEventHandler(client, this);
     await eventHandler.setupEventHandler(parameters.event);
 
     const closeFunction = async () => {

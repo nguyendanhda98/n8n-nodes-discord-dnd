@@ -1,7 +1,7 @@
 import { ILoadOptionsFunctions, INodePropertyOptions } from "n8n-workflow";
 import { Events } from "discord.js";
 
-export const methods = {
+export const DiscordTriggerMethods = {
   loadOptions: {
     async getEvents(
       this: ILoadOptionsFunctions
