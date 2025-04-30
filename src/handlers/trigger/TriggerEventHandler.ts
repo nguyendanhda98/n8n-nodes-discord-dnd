@@ -122,8 +122,12 @@ export class TriggerEventHandler {
         case Events.MessageReactionRemove:
           const messageReaction: MessageReaction = args[0];
           const reactUser: User = args[1];
-          const details: MessageReactionEventDetails = args[2]; // MessageReactionEventDetails
-          data.messageReaction = { ...messageReaction };
+          const details: MessageReactionEventDetails = args[2]; //  MessageReactionEventDetails
+
+          data.messageReaction = {
+            ...messageReaction,
+            message: await messageReaction.message.fetch(),
+          };
           data.user = await enrichMember(
             reactUser,
             messageReaction.message.guildId || undefined
