@@ -552,8 +552,16 @@ export class TriggerEventHandler {
         case Events.VoiceStateUpdate:
           const oldVoiceState: VoiceState = args[0]; // VoiceState trước khi thay đổi
           const newVoiceState: VoiceState = args[1]; // VoiceState sau khi thay đổi
+          // Lấy thông tin user từ member của newVoiceState
+          const userVoice = newVoiceState.member?.user;
           data.oldVoiceState = { ...oldVoiceState };
           data.newVoiceState = { ...newVoiceState };
+          data.user = userVoice
+            ? {
+                ...userVoice,
+                avatarURL: userVoice.displayAvatarURL({ size: 4096 }),
+              }
+            : null;
           break;
 
         // Presence events

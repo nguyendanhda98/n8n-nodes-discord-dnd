@@ -79,7 +79,13 @@ export const DiscordTriggerMethods = {
           { name: "Invite Create", value: Events.InviteCreate },
           { name: "Invite Delete", value: Events.InviteDelete },
         ],
-        voice: [{ name: "Voice State Update", value: Events.VoiceStateUpdate }],
+        voice: [
+          {
+            name: "Voice Channel Effect Send",
+            value: Events.VoiceChannelEffectSend,
+          },
+          { name: "Voice State Update", value: Events.VoiceStateUpdate },
+        ],
         presence: [{ name: "Presence Update", value: Events.PresenceUpdate }],
         scheduledEvent: [
           {
