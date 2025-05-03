@@ -24,6 +24,8 @@ export class DiscordTrigger implements INodeType {
     const parameters: ITriggerParameters = {
       triggerType: this.getNodeParameter("triggerType", "message") as string,
       event: this.getNodeParameter("event", "messageCreate") as string,
+      includeBot: this.getNodeParameter("includeBot", false) as boolean,
+      directMessage: this.getNodeParameter("directMessage", false) as boolean,
     };
 
     const clientOptions: ClientOptions = getclientOptions(
@@ -35,7 +37,7 @@ export class DiscordTrigger implements INodeType {
     );
 
     const eventHandler = new TriggerEventHandler(client, this);
-    await eventHandler.setupEventHandler(parameters.event);
+    await eventHandler.setupEventHandler(parameters.event, parameters.includeBot, parameters.directMessage);
 
     const closeFunction = async () => {
       console.log("Disconnecting from Discord...");

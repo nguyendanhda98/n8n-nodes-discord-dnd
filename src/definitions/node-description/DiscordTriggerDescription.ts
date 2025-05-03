@@ -55,5 +55,29 @@ export const DiscordTriggerDescription: INodeTypeDescription = {
         loadOptionsDependsOn: ["triggerType"],
       },
     },
+    {
+      displayName: "Include Bot",
+      name: "includeBot",
+      type: "boolean",
+      default: false,
+      description: "Whether to include bot messages in the trigger",
+      displayOptions: {
+        show: {
+          triggerType: ["message"],
+        },
+      },
+    },
+    {
+      displayName: "Direct Message",
+      name: "directMessage",
+      type: "boolean",
+      default: false,
+      description: "Whether to trigger on direct messages",
+      displayOptions: {
+        show: {
+          triggerType: ["message"],
+        },
+      },
+    },
   ],
 };

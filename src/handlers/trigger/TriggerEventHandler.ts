@@ -40,6 +40,7 @@ import {
   ThreadMember,
   GuildEmoji,
   BaseInteraction,
+  ChannelType,
 } from "discord.js";
 import { ITriggerFunctions, IDataObject } from "n8n-workflow";
 import { messageToJson } from "../../transformers/MessageTransformer";
@@ -50,7 +51,7 @@ export class TriggerEventHandler {
     private readonly triggerInstance: ITriggerFunctions
   ) {}
 
-  async setupEventHandler(event: string) {
+  async setupEventHandler(event: string, includeBot: boolean = false, directMessage: boolean = false) {
     // Handle main events
     this.client.on(event, async (...args: any[]) => {
       const data: IDataObject = {};
@@ -77,6 +78,17 @@ export class TriggerEventHandler {
         // Message events
         case Events.MessageCreate:
           const message: Message = args[0];
+          // Skip if message is from a bot and includeBot is false
+          if (!includeBot && message.author?.bot) {
+            return;
+          }
+          
+          // Skip if message is a DM and directMessage is false, or if it's not a DM and directMessage is true
+          if ((!directMessage && message.channel.type === ChannelType.DM) || 
+              (directMessage && message.channel.type !== ChannelType.DM)) {
+            return;
+          }
+
           data.message = await messageToJson(message);
 
           // Use the guild ID from the message when enriching the author
