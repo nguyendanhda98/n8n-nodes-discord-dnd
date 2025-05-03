@@ -28,6 +28,16 @@ export class DiscordTrigger implements INodeType {
       directMessage: this.getNodeParameter("directMessage", false) as boolean,
     };
 
+    // Get pattern and value parameters for message triggers
+    if (parameters.triggerType === "message") {
+      parameters.pattern = this.getNodeParameter("pattern", "botMention") as string;
+      
+      if (["contains", "startsWith", "endsWith", "equals", "regex"].includes(parameters.pattern)) {
+        parameters.value = this.getNodeParameter("value", "") as string;
+        parameters.caseSensitive = this.getNodeParameter("caseSensitive", false) as boolean;
+      }
+    }
+
     const clientOptions: ClientOptions = getclientOptions(
       parameters.triggerType
     );
@@ -37,7 +47,14 @@ export class DiscordTrigger implements INodeType {
     );
 
     const eventHandler = new TriggerEventHandler(client, this);
-    await eventHandler.setupEventHandler(parameters.event, parameters.includeBot, parameters.directMessage);
+    await eventHandler.setupEventHandler(
+      parameters.event, 
+      parameters.includeBot, 
+      parameters.directMessage,
+      parameters.pattern,
+      parameters.value,
+      parameters.caseSensitive
+    );
 
     const closeFunction = async () => {
       console.log("Disconnecting from Discord...");

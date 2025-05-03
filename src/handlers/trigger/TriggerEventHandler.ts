@@ -44,6 +44,7 @@ import {
 } from "discord.js";
 import { ITriggerFunctions, IDataObject } from "n8n-workflow";
 import { messageToJson } from "../../transformers/MessageTransformer";
+import { PatternType } from "../../Interfaces/types";
 
 export class TriggerEventHandler {
   constructor(
@@ -51,7 +52,14 @@ export class TriggerEventHandler {
     private readonly triggerInstance: ITriggerFunctions
   ) {}
 
-  async setupEventHandler(event: string, includeBot: boolean = false, directMessage: boolean = false) {
+  async setupEventHandler(
+    event: string,
+    includeBot: boolean = false,
+    directMessage: boolean = false,
+    pattern: string = "botMention",
+    value: string = "",
+    caseSensitive: boolean = false
+  ) {
     // Handle main events
     this.client.on(event, async (...args: any[]) => {
       const data: IDataObject = {};
@@ -78,15 +86,85 @@ export class TriggerEventHandler {
         // Message events
         case Events.MessageCreate:
           const message: Message = args[0];
+
           // Skip if message is from a bot and includeBot is false
           if (!includeBot && message.author?.bot) {
             return;
           }
-          
+
           // Skip if message is a DM and directMessage is false, or if it's not a DM and directMessage is true
-          if ((!directMessage && message.channel.type === ChannelType.DM) || 
-              (directMessage && message.channel.type !== ChannelType.DM)) {
+          if (
+            (!directMessage && message.channel.type === ChannelType.DM) ||
+            (directMessage && message.channel.type !== ChannelType.DM)
+          ) {
             return;
+          }
+
+          // Apply pattern filtering for message triggers
+          if (pattern) {
+            let shouldTrigger = false;
+
+            const content = caseSensitive
+              ? message.content
+              : message.content.toLowerCase();
+
+            const filterValue = caseSensitive ? value : value.toLowerCase();
+
+            switch (pattern) {
+              case PatternType.BOT_MENTION:
+                // Check if the bot is mentioned or if the message is a reply to the bot
+                const isMentioned = message.mentions.users.has(
+                  this.client.user!.id
+                );
+                const isReplyToBot = message.reference?.messageId
+                  ? await message.channel.messages
+                      .fetch(message.reference.messageId)
+                      .then((msg) => msg.author.id === this.client.user!.id)
+                      .catch(() => false)
+                  : false;
+
+                shouldTrigger = isMentioned || isReplyToBot;
+                break;
+
+              case PatternType.CONTAINS:
+                shouldTrigger = content.includes(filterValue);
+                break;
+
+              case PatternType.STARTS_WITH:
+                shouldTrigger = content.startsWith(filterValue);
+                break;
+
+              case PatternType.ENDS_WITH:
+                shouldTrigger = content.endsWith(filterValue);
+                break;
+
+              case PatternType.EQUALS:
+                shouldTrigger = content === filterValue;
+                break;
+
+              case PatternType.REGEX:
+                try {
+                  const regex = new RegExp(value, !caseSensitive ? "i" : "");
+                  shouldTrigger = regex.test(message.content);
+                } catch (error) {
+                  console.error(`Invalid regex pattern: ${value}`, error);
+                }
+                break;
+
+              case PatternType.EVERY:
+                // Trigger on every message (no filtering)
+                shouldTrigger = true;
+                break;
+
+              default:
+                shouldTrigger = true;
+                break;
+            }
+
+            // Skip if pattern doesn't match
+            if (!shouldTrigger) {
+              return;
+            }
           }
 
           data.message = await messageToJson(message);
