@@ -37,6 +37,30 @@ export class DiscordTrigger implements INodeType {
         parameters.caseSensitive = this.getNodeParameter("caseSensitive", false) as boolean;
       }
     }
+    
+    // Get additional fields for filtering
+    const additionalFields = this.getNodeParameter("additionalFields", {}) as {
+      serverIds?: string;
+      channelIds?: string;
+      roleIds?: string;
+      userIds?: string;
+    };
+    
+    if (additionalFields.serverIds) {
+      parameters.serverIds = additionalFields.serverIds.split(',').map(id => id.trim());
+    }
+    
+    if (additionalFields.channelIds) {
+      parameters.channelIds = additionalFields.channelIds.split(',').map(id => id.trim());
+    }
+    
+    if (additionalFields.roleIds) {
+      parameters.roleIds = additionalFields.roleIds.split(',').map(id => id.trim());
+    }
+    
+    if (additionalFields.userIds) {
+      parameters.userIds = additionalFields.userIds.split(',').map(id => id.trim());
+    }
 
     const clientOptions: ClientOptions = getclientOptions(
       parameters.triggerType
@@ -53,7 +77,11 @@ export class DiscordTrigger implements INodeType {
       parameters.directMessage,
       parameters.pattern,
       parameters.value,
-      parameters.caseSensitive
+      parameters.caseSensitive,
+      parameters.serverIds,
+      parameters.channelIds,
+      parameters.roleIds,
+      parameters.userIds
     );
 
     const closeFunction = async () => {

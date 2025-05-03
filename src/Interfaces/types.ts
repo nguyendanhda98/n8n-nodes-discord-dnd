@@ -6,6 +6,10 @@ export interface ITriggerParameters {
   pattern?: string;
   value?: string;
   caseSensitive?: boolean;
+  serverIds?: string[];
+  channelIds?: string[];
+  roleIds?: string[];
+  userIds?: string[];
 }
 
 export interface IActionParameters {

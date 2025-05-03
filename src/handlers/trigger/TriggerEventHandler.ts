@@ -58,11 +58,167 @@ export class TriggerEventHandler {
     directMessage: boolean = false,
     pattern: string = "botMention",
     value: string = "",
-    caseSensitive: boolean = false
+    caseSensitive: boolean = false,
+    serverIds: string[] = [],
+    channelIds: string[] = [],
+    roleIds: string[] = [],
+    userIds: string[] = []
   ) {
     // Handle main events
     this.client.on(event, async (...args: any[]) => {
       const data: IDataObject = {};
+
+      // Perform checks based on the event type
+      if (event === Events.MessageCreate) {
+        const message: Message = args[0];
+
+        // Skip if message is from a bot and includeBot is false
+        if (!includeBot && message.author?.bot) {
+          return;
+        }
+
+        // Skip if message is a DM and directMessage is false, or if it's not a DM and directMessage is true
+        if (
+          (!directMessage && message.channel.type === ChannelType.DM) ||
+          (directMessage && message.channel.type !== ChannelType.DM)
+        ) {
+          return;
+        }
+
+        // Check server, channel and user ID filters
+        if (
+          serverIds.length > 0 &&
+          (!message.guildId || !serverIds.includes(message.guildId))
+        ) {
+          return;
+        }
+
+        if (channelIds.length > 0 && !channelIds.includes(message.channelId)) {
+          return;
+        }
+
+        if (userIds.length > 0 && !userIds.includes(message.author.id)) {
+          return;
+        }
+
+        // Check role filter if not a DM
+        if (roleIds.length > 0) {
+          if (!message.guild || !message.member) {
+            return;
+          }
+
+          const hasRole = message.member.roles.cache.some((role) =>
+            roleIds.includes(role.id)
+          );
+          if (!hasRole) {
+            return;
+          }
+        }
+
+        // Apply pattern filtering for message triggers
+        if (pattern) {
+          let shouldTrigger = false;
+
+          const content = caseSensitive
+            ? message.content
+            : message.content.toLowerCase();
+
+          const filterValue = caseSensitive ? value : value.toLowerCase();
+
+          switch (pattern) {
+            case PatternType.BOT_MENTION:
+              // Check if the bot is mentioned or if the message is a reply to the bot
+              const isMentioned = message.mentions.users.has(
+                this.client.user!.id
+              );
+              const isReplyToBot = message.reference?.messageId
+                ? await message.channel.messages
+                    .fetch(message.reference.messageId)
+                    .then((msg) => msg.author.id === this.client.user!.id)
+                    .catch(() => false)
+                : false;
+
+              shouldTrigger = isMentioned || isReplyToBot;
+              break;
+
+            case PatternType.CONTAINS:
+              shouldTrigger = content.includes(filterValue);
+              break;
+
+            case PatternType.STARTS_WITH:
+              shouldTrigger = content.startsWith(filterValue);
+              break;
+
+            case PatternType.ENDS_WITH:
+              shouldTrigger = content.endsWith(filterValue);
+              break;
+
+            case PatternType.EQUALS:
+              shouldTrigger = content === filterValue;
+              break;
+
+            case PatternType.REGEX:
+              try {
+                const regex = new RegExp(value, !caseSensitive ? "i" : "");
+                shouldTrigger = regex.test(message.content);
+              } catch (error) {
+                console.error(`Invalid regex pattern: ${value}`, error);
+              }
+              break;
+
+            case PatternType.EVERY:
+              // Trigger on every message (no filtering)
+              shouldTrigger = true;
+              break;
+
+            default:
+              shouldTrigger = true;
+              break;
+          }
+
+          // Skip if pattern doesn't match
+          if (!shouldTrigger) {
+            return;
+          }
+        }
+      } else {
+        // Apply general filters for non-message events
+        const guildId = this.getGuildIdFromEvent(event, args);
+        const channelId = this.getChannelIdFromEvent(event, args);
+        const userId = this.getUserIdFromEvent(event, args);
+        const member = this.getMemberFromEvent(event, args);
+
+        // Filter by server ID if available
+        if (
+          serverIds.length > 0 &&
+          (!guildId || !serverIds.includes(guildId))
+        ) {
+          return;
+        }
+
+        // Filter by channel ID if available
+        if (
+          channelIds.length > 0 &&
+          (!channelId || !channelIds.includes(channelId))
+        ) {
+          return;
+        }
+
+        // Filter by user ID if available
+        if (userIds.length > 0 && (!userId || !userIds.includes(userId))) {
+          return;
+        }
+
+        // Filter by role ID if available
+        if (roleIds.length > 0 && member) {
+          const hasRole = member.roles?.cache.some((role) =>
+            roleIds.includes(role.id)
+          );
+          if (!hasRole) {
+            return;
+          }
+        }
+      }
 
       // Helper to enrich user/member info with roles
       const enrichMember = async (memberOrUser: any, guildId?: string) => {
@@ -86,87 +242,6 @@ export class TriggerEventHandler {
         // Message events
         case Events.MessageCreate:
           const message: Message = args[0];
-
-          // Skip if message is from a bot and includeBot is false
-          if (!includeBot && message.author?.bot) {
-            return;
-          }
-
-          // Skip if message is a DM and directMessage is false, or if it's not a DM and directMessage is true
-          if (
-            (!directMessage && message.channel.type === ChannelType.DM) ||
-            (directMessage && message.channel.type !== ChannelType.DM)
-          ) {
-            return;
-          }
-
-          // Apply pattern filtering for message triggers
-          if (pattern) {
-            let shouldTrigger = false;
-
-            const content = caseSensitive
-              ? message.content
-              : message.content.toLowerCase();
-
-            const filterValue = caseSensitive ? value : value.toLowerCase();
-
-            switch (pattern) {
-              case PatternType.BOT_MENTION:
-                // Check if the bot is mentioned or if the message is a reply to the bot
-                const isMentioned = message.mentions.users.has(
-                  this.client.user!.id
-                );
-                const isReplyToBot = message.reference?.messageId
-                  ? await message.channel.messages
-                      .fetch(message.reference.messageId)
-                      .then((msg) => msg.author.id === this.client.user!.id)
-                      .catch(() => false)
-                  : false;
-
-                shouldTrigger = isMentioned || isReplyToBot;
-                break;
-
-              case PatternType.CONTAINS:
-                shouldTrigger = content.includes(filterValue);
-                break;
-
-              case PatternType.STARTS_WITH:
-                shouldTrigger = content.startsWith(filterValue);
-                break;
-
-              case PatternType.ENDS_WITH:
-                shouldTrigger = content.endsWith(filterValue);
-                break;
-
-              case PatternType.EQUALS:
-                shouldTrigger = content === filterValue;
-                break;
-
-              case PatternType.REGEX:
-                try {
-                  const regex = new RegExp(value, !caseSensitive ? "i" : "");
-                  shouldTrigger = regex.test(message.content);
-                } catch (error) {
-                  console.error(`Invalid regex pattern: ${value}`, error);
-                }
-                break;
-
-              case PatternType.EVERY:
-                // Trigger on every message (no filtering)
-                shouldTrigger = true;
-                break;
-
-              default:
-                shouldTrigger = true;
-                break;
-            }
-
-            // Skip if pattern doesn't match
-            if (!shouldTrigger) {
-              return;
-            }
-          }
-
           data.message = await messageToJson(message);
 
           // Use the guild ID from the message when enriching the author
@@ -186,17 +261,14 @@ export class TriggerEventHandler {
           const deletedMessages = args[0]; // Collection<Snowflake, Message>
           const channelMessageDeleteBulk: GuildTextBasedChannel = args[1]; // TextBasedChannel
 
-          // Trích xuất thông tin kênh
           data.channel = {
             ...channelMessageDeleteBulk,
           };
 
-          // Trích xuất danh sách tin nhắn bị xóa
           data.deletedMessages = deletedMessages.map((message: Message) => ({
             ...message,
           }));
 
-          // Tổng số tin nhắn bị xóa
           data.deletedCount = deletedMessages.size;
 
           break;
@@ -204,6 +276,7 @@ export class TriggerEventHandler {
         case Events.MessageUpdate:
           const oldMessage: Message = args[0];
           const newMessage: Message = args[1];
+
           data.oldMessage = { ...oldMessage };
           data.newMessage = { ...newMessage };
           break;
@@ -228,6 +301,7 @@ export class TriggerEventHandler {
         case Events.MessageReactionRemoveAll:
           const messageReactionRemoved: Message = args[0];
           const reactions = args[1]; // Collection<Snowflake, MessageReaction>
+
           data.message = { ...messageReactionRemoved };
           data.reactions = reactions.map((reaction: MessageReaction) => ({
             ...reaction,
@@ -238,7 +312,6 @@ export class TriggerEventHandler {
         case Events.MessageReactionRemoveEmoji:
           const reactionMessageReactionRemoveEmoji: MessageReaction = args[0]; // MessageReaction
 
-          // Trích xuất thông tin tin nhắn và reaction
           data.reaction = {
             ...reactionMessageReactionRemoveEmoji,
           };
@@ -247,6 +320,7 @@ export class TriggerEventHandler {
 
         case Events.TypingStart:
           const typing: Typing = args[0];
+
           data.typing = { ...typing };
           if (typing.user) {
             data.user = await enrichMember(typing.user);
@@ -256,32 +330,31 @@ export class TriggerEventHandler {
         // Guild events
         case Events.ChannelCreate:
           const channel: GuildChannel = args[0];
+
           data.channel = { ...channel };
           break;
 
         case Events.ChannelDelete:
           const deletedChannel: DMChannel | GuildChannel = args[0];
+
           data.channel = { ...deletedChannel };
           break;
+
         case Events.ChannelPinsUpdate:
           const pinsChannel: TextBasedChannels = args[0]; // GuildChannel hoặc ThreadChannel
           const pinTimestamp: Date = args[1]; // Date
 
-          // Trích xuất thông tin cơ bản của channel
           data.channel = {
             ...pinsChannel,
           };
-          data.pinTimestamp = pinTimestamp.toISOString(); // Chuyển Date thành chuỗi ISO để serialize
+          data.pinTimestamp = pinTimestamp.toISOString();
 
-          // Fetch danh sách tin nhắn ghim từ kênh
           try {
             const pinnedMessages = await pinsChannel.messages.fetchPinned();
 
-            // Lấy tin nhắn ghim mới nhất (giả định là tin nhắn vừa được ghim)
-            const latestPinnedMessage = pinnedMessages.last(); // Tin nhắn cuối cùng trong danh sách
+            const latestPinnedMessage = pinnedMessages.last();
 
             if (latestPinnedMessage) {
-              // Trích xuất thông tin chi tiết từ tin nhắn ghim
               data.pinnedMessage = {
                 id: latestPinnedMessage.id,
                 content: latestPinnedMessage.content,
@@ -296,11 +369,10 @@ export class TriggerEventHandler {
                   avatar: latestPinnedMessage.author?.avatar,
                   bot: latestPinnedMessage.author?.bot,
                 },
-                pinned: latestPinnedMessage.pinned, // Phải là true vì đây là tin nhắn ghim
-                pinnedAt: pinTimestamp.toISOString(), // Thời gian ghim (dùng pinTimestamp từ sự kiện)
+                pinned: latestPinnedMessage.pinned,
+                pinnedAt: pinTimestamp.toISOString(),
               };
 
-              // Nếu tin nhắn thuộc server và có thông tin member, lấy thêm thông tin member
               if (latestPinnedMessage.guild && latestPinnedMessage.member) {
                 (data.pinnedMessage as IDataObject).member = await enrichMember(
                   latestPinnedMessage.member
@@ -313,7 +385,6 @@ export class TriggerEventHandler {
               data.pinnedMessage = null;
             }
 
-            // Lưu toàn bộ danh sách tin nhắn ghim (nếu cần)
             data.pinnedMessages = pinnedMessages.map((message: Message) => ({
               ...message,
             }));
@@ -323,16 +394,18 @@ export class TriggerEventHandler {
             data.pinnedMessages = [];
           }
           break;
+
         case Events.ChannelUpdate:
           const oldChannel: DMChannel | GuildChannel = args[0];
           const newChannel: DMChannel | GuildChannel = args[1];
+
           data.oldChannel = { ...oldChannel };
           data.newChannel = { ...newChannel };
           break;
-        case Events.GuildAvailable:
-          const guildAvailable: Guild = args[0]; // Đối tượng Guild
 
-          // Trích xuất thông tin chi tiết từ guild
+        case Events.GuildAvailable:
+          const guildAvailable: Guild = args[0];
+
           data.guild = {
             ...guildAvailable,
             channels: guildAvailable.channels.cache.map((channel: any) => ({
@@ -341,7 +414,6 @@ export class TriggerEventHandler {
             roles: guildAvailable.roles.cache.map((role: Role) => ({
               ...role,
             })),
-            // Nếu cần, fetch owner của guild
             owner: await guildAvailable
               .fetchOwner()
               .then((owner: GuildMember) => ({
@@ -355,7 +427,8 @@ export class TriggerEventHandler {
           break;
 
         case Events.GuildCreate:
-          const guildCreated = args[0]; // Guild
+          const guildCreated = args[0];
+
           console.log(
             `🚀 ~ guildCreate - Bot được thêm vào guild ${guildCreated.name} (ID: ${guildCreated.id})`
           );
@@ -383,7 +456,7 @@ export class TriggerEventHandler {
           break;
 
         case Events.GuildDelete:
-          const guildDeleted: Guild = args[0]; // Guild hoặc PartialGuild
+          const guildDeleted: Guild = args[0];
 
           data.guild = {
             ...guildDeleted,
@@ -391,7 +464,7 @@ export class TriggerEventHandler {
           break;
 
         case Events.GuildUnavailable:
-          const guildUnavailable: Guild = args[0]; // Guild
+          const guildUnavailable: Guild = args[0];
 
           data.guild = {
             ...guildUnavailable,
@@ -399,8 +472,8 @@ export class TriggerEventHandler {
           break;
 
         case Events.GuildUpdate:
-          const oldGuild: Guild = args[0]; // Guild trước khi thay đổi
-          const newGuild: Guild = args[1]; // Guild sau khi thay đổi
+          const oldGuild: Guild = args[0];
+          const newGuild: Guild = args[1];
 
           data.oldGuild = {
             ...oldGuild,
@@ -408,7 +481,6 @@ export class TriggerEventHandler {
           data.newGuild = {
             ...newGuild,
           };
-          // So sánh thay đổi (ví dụ: log những thay đổi chính)
           data.changes = {};
           if (oldGuild.name !== newGuild.name)
             (data.changes as IDataObject).name = {
@@ -430,25 +502,28 @@ export class TriggerEventHandler {
         case Events.GuildRoleCreate:
         case Events.GuildRoleDelete:
           const role: Role = args[0];
+
           data.role = { ...role };
           break;
 
         case Events.GuildRoleUpdate:
           const oldRole: Role = args[0];
           const newRole: Role = args[1];
+
           data.oldRole = { ...oldRole };
           data.newRole = { ...newRole };
           break;
 
         case Events.StageInstanceCreate:
         case Events.StageInstanceDelete:
-          const stageInstance: StageInstance = args[0]; // StageInstance
+          const stageInstance: StageInstance = args[0];
+
           data.stageInstance = { ...stageInstance };
           break;
 
         case Events.StageInstanceUpdate:
-          const oldStageInstance: StageInstance | null = args[0]; // StageInstance trước khi thay đổi
-          const newStageInstance: StageInstance = args[1]; // StageInstance sau khi thay đổi
+          const oldStageInstance: StageInstance | null = args[0];
+          const newStageInstance: StageInstance = args[1];
 
           data.oldStageInstance = oldStageInstance
             ? {
@@ -459,7 +534,6 @@ export class TriggerEventHandler {
           data.newStageInstance = {
             ...newStageInstance,
           };
-          // So sánh thay đổi
           data.changes = {};
           if (
             oldStageInstance &&
@@ -484,19 +558,21 @@ export class TriggerEventHandler {
         case Events.ThreadCreate:
           const threadCreate: ThreadChannel = args[0];
           const newlyCreated: boolean = args[1];
+
           data.thread = { ...threadCreate };
-          data.newlyCreated = newlyCreated; // true nếu thread mới được tạo
+          data.newlyCreated = newlyCreated;
           break;
 
         case Events.ThreadDelete:
           const deletedThread: ThreadChannel = args[0];
+
           data.thread = { ...deletedThread };
           break;
-        case Events.ThreadListSync:
-          const syncedThreads = args[0]; // Collection<Snowflake, ThreadChannel>
-          const guildThreadListSync: Guild = args[1]; // Guild
 
-          // Trích xuất danh sách thread được đồng bộ
+        case Events.ThreadListSync:
+          const syncedThreads = args[0];
+          const guildThreadListSync: Guild = args[1];
+
           data.syncedThreads = syncedThreads.map((thread: ThreadChannel) => ({
             ...thread,
           }));
@@ -504,31 +580,28 @@ export class TriggerEventHandler {
           break;
 
         case Events.ThreadMembersUpdate:
-          const addedMembers = args[0]; // Collection<Snowflake, ThreadMember>
-          const removedMembers = args[1]; // Collection<Snowflake, ThreadMember>
-          const threadMembersUpdate: ThreadChannel = args[2]; // ThreadChannel
+          const addedMembers = args[0];
+          const removedMembers = args[1];
+          const threadMembersUpdate: ThreadChannel = args[2];
 
-          // Trích xuất thông tin thread
           data.thread = {
             ...threadMembersUpdate,
           };
 
-          // Trích xuất danh sách thành viên được thêm
           data.addedMembers = addedMembers.map((member: GuildMember) => ({
             ...member,
           }));
 
-          // Trích xuất danh sách thành viên bị xóa
           data.removedMembers = removedMembers.map((member: GuildMember) => ({
             ...member,
           }));
 
           break;
-        case Events.ThreadMemberUpdate:
-          const oldMember: ThreadMember = args[0]; // ThreadMember trước khi thay đổi
-          const newMember: ThreadMember = args[1]; // ThreadMember sau khi thay đổi
 
-          // Trích xuất thông tin thành viên trước và sau khi thay đổi
+        case Events.ThreadMemberUpdate:
+          const oldMember: ThreadMember = args[0];
+          const newMember: ThreadMember = args[1];
+
           data.oldMember = {
             ...oldMember,
           };
@@ -537,9 +610,11 @@ export class TriggerEventHandler {
           };
 
           break;
+
         case Events.ThreadUpdate:
           const oldThread: ThreadChannel = args[0];
           const newThread: ThreadChannel = args[1];
+
           data.oldThread = { ...oldThread };
           data.newThread = { ...newThread };
           break;
@@ -548,19 +623,18 @@ export class TriggerEventHandler {
         case Events.GuildBanAdd:
         case Events.GuildBanRemove:
           const ban: GuildBan = args[0];
+
           data.ban = { ...ban };
           break;
 
         case Events.GuildAuditLogEntryCreate:
-          const auditLogEntry: GuildAuditLogsEntry = args[0]; // GuildAuditLogsEntry
-          const guildAuditLogEntry: Guild = args[1]; // Guild
+          const auditLogEntry: GuildAuditLogsEntry = args[0];
+          const guildAuditLogEntry: Guild = args[1];
 
-          // Trích xuất thông tin từ audit log entry
           data.auditLogEntry = {
             ...auditLogEntry,
           };
 
-          // Fetch thông tin chi tiết của người thực hiện hành động (executor)
           if (auditLogEntry.executorId) {
             try {
               const executor = await guildAuditLogEntry.client.users.fetch(
@@ -581,37 +655,43 @@ export class TriggerEventHandler {
         // Emoji & Sticker events
         case Events.GuildEmojiCreate:
         case Events.GuildEmojiDelete:
-          const emoji: GuildEmoji = args[0]; // Emoji
+          const emoji: GuildEmoji = args[0];
+
           data.emoji = { ...emoji };
           break;
 
         case Events.GuildEmojiUpdate:
-          const oldEmoji: GuildEmoji = args[0]; // Emoji trước khi thay đổi
-          const newEmoji: GuildEmoji = args[1]; // Emoji sau khi thay đổi
+          const oldEmoji: GuildEmoji = args[0];
+          const newEmoji: GuildEmoji = args[1];
+
           data.oldEmoji = { ...oldEmoji };
           data.newEmoji = { ...newEmoji };
           break;
 
         case Events.GuildStickerCreate:
         case Events.GuildStickerDelete:
-          const sticker: Sticker = args[0]; // Sticker
+          const sticker: Sticker = args[0];
+
           data.sticker = { ...sticker };
           break;
 
         case Events.GuildStickerUpdate:
-          const oldSticker: Sticker = args[0]; // Sticker trước khi thay đổi
-          const newSticker: Sticker = args[1]; // Sticker sau khi thay đổi
+          const oldSticker: Sticker = args[0];
+          const newSticker: Sticker = args[1];
+
           data.oldSticker = { ...oldSticker };
           data.newSticker = { ...newSticker };
           break;
 
         // Integration & Webhook events
         case Events.GuildIntegrationsUpdate:
-          const guildIntegrations: Guild = args[0]; // Guild
+          const guildIntegrations: Guild = args[0];
+
           data.guild = {
             ...guildIntegrations,
           };
           break;
+
         case Events.WebhooksUpdate:
           const webhooksChannel:
             | TextChannel
@@ -619,7 +699,8 @@ export class TriggerEventHandler {
             | VoiceChannel
             | StageChannel
             | ForumChannel
-            | MediaChannel = args[0]; // Channel
+            | MediaChannel = args[0];
+
           data.webhooksChannel = {
             ...webhooksChannel,
           };
@@ -629,20 +710,22 @@ export class TriggerEventHandler {
         // Invite events
         case Events.InviteCreate:
         case Events.InviteDelete:
-          const inviteCreated: Invite = args[0]; // Invite
+          const inviteCreated: Invite = args[0];
+
           data.invite = { ...inviteCreated };
           break;
 
         // Voice events
         case Events.VoiceChannelEffectSend:
-          const voiceChannelEffectSend: VoiceChannelEffect = args[0]; // VoiceChannelEffectSend
+          const voiceChannelEffectSend: VoiceChannelEffect = args[0];
+
           data.voiceChannelEffectSend = { ...voiceChannelEffectSend };
           break;
 
         case Events.VoiceStateUpdate:
-          const oldVoiceState: VoiceState = args[0]; // VoiceState trước khi thay đổi
-          const newVoiceState: VoiceState = args[1]; // VoiceState sau khi thay đổi
-          // Lấy thông tin user từ member của newVoiceState
+          const oldVoiceState: VoiceState = args[0];
+          const newVoiceState: VoiceState = args[1];
+
           const userVoice = newVoiceState.member?.user;
           data.oldVoiceState = { ...oldVoiceState };
           data.newVoiceState = { ...newVoiceState };
@@ -658,6 +741,7 @@ export class TriggerEventHandler {
         case Events.PresenceUpdate:
           const oldPresence: Presence | null = args[0];
           const newPresence: Presence = args[1];
+
           data.oldPresence = oldPresence
             ? {
                 ...oldPresence,
@@ -669,22 +753,27 @@ export class TriggerEventHandler {
         // Scheduled event events
         case Events.GuildScheduledEventCreate:
         case Events.GuildScheduledEventDelete:
-          const guildScheduled: GuildScheduledEvent = args[0]; // GuildScheduledEvent
+          const guildScheduled: GuildScheduledEvent = args[0];
+
           data.guildScheduledEvent = { ...guildScheduled };
           data.guild = { ...guildScheduled.guild };
           break;
+
         case Events.GuildScheduledEventUpdate:
-          const oldGuildScheduledEvent: GuildScheduledEvent | null = args[0]; // GuildScheduledEvent trước khi thay đổi
-          const newGuildScheduledEvent: GuildScheduledEvent = args[1]; // GuildScheduledEvent sau khi thay đổi
+          const oldGuildScheduledEvent: GuildScheduledEvent | null = args[0];
+          const newGuildScheduledEvent: GuildScheduledEvent = args[1];
+
           data.oldGuildScheduledEvent = oldGuildScheduledEvent
             ? { ...oldGuildScheduledEvent }
             : null;
           data.newGuildScheduledEvent = { ...newGuildScheduledEvent };
           break;
+
         case Events.GuildScheduledEventUserAdd:
         case Events.GuildScheduledEventUserRemove:
           const guildScheduledEvent: GuildScheduledEvent = args[0];
           const user: User = args[1];
+
           data.user = { ...user };
           data.guildScheduledEvent = { ...guildScheduledEvent };
           break;
@@ -692,11 +781,14 @@ export class TriggerEventHandler {
         // Interaction events
         case Events.InteractionCreate:
           const interaction: BaseInteraction = args[0];
+
           data.interaction = { ...interaction };
 
           break;
+
         case Events.ApplicationCommandPermissionsUpdate:
-          const dataApp: ApplicationCommandPermissionsUpdateData = args[0]; // ApplicationCommandPermissionsUpdateData
+          const dataApp: ApplicationCommandPermissionsUpdateData = args[0];
+
           data.dataApp = { ...dataApp };
           break;
 
@@ -705,24 +797,29 @@ export class TriggerEventHandler {
           const info: string = args[0];
           data.info = info;
           break;
+
         case Events.Error:
           const error: Error = args[0];
           data.error = { ...error };
           break;
+
         case Events.Warn:
           const warn: string = args[0];
           data.warn = warn;
           break;
+
         case Events.ClientReady:
-          const client: Client = args[0]; // Client
+          const client: Client = args[0];
           data.client = { ...client };
           break;
+
         case Events.ShardDisconnect:
           const event: CloseEvent = args[0];
           const ShardDisconnectId: number = args[1];
           data.event = { ...event };
           data.id = ShardDisconnectId;
           break;
+
         case Events.ShardError:
           const shardError: Error = args[0];
           const shardId: number = args[1];
@@ -751,8 +848,8 @@ export class TriggerEventHandler {
 
         // User event
         case Events.UserUpdate:
-          const oldUser: User = args[0]; // User trước khi thay đổi
-          const newUser: User = args[1]; // User sau khi thay đổi
+          const oldUser: User = args[0];
+          const newUser: User = args[1];
           data.oldUser = { ...oldUser };
           data.newUser = { ...newUser };
           break;
@@ -761,13 +858,15 @@ export class TriggerEventHandler {
         case Events.GuildMemberAdd:
         case Events.GuildMemberAvailable:
         case Events.GuildMemberRemove:
-          const member: GuildMember = args[0]; // GuildMember
+          const member: GuildMember = args[0];
+
           data.member = { ...member };
           break;
 
         case Events.GuildMemberUpdate:
-          const oldMemberUpdate: GuildMember = args[0]; // GuildMember trước khi thay đổi
-          const newMemberUpdate: GuildMember = args[1]; // GuildMember sau khi thay đổi
+          const oldMemberUpdate: GuildMember = args[0];
+          const newMemberUpdate: GuildMember = args[1];
+
           data.oldMemberUpdate = { ...oldMemberUpdate };
           data.newMemberUpdate = { ...newMemberUpdate };
           break;
@@ -775,7 +874,8 @@ export class TriggerEventHandler {
         case Events.GuildMembersChunk:
           const membersChunk: Collection<string, GuildMember> = args[0];
           const guild: Guild = args[1];
-          const chunk: GuildMembersChunk = args[2]; // Số lượng thành viên trong chunk
+          const chunk: GuildMembersChunk = args[2];
+
           data.members = { ...membersChunk };
           data.guild = { ...guild };
           data.chunk = { ...chunk };
@@ -784,18 +884,22 @@ export class TriggerEventHandler {
         // Auto moderation events
         case Events.AutoModerationActionExecution:
           const action: AutoModerationActionExecution = args[0];
+
           data.action = { ...action };
 
           break;
+
         case Events.AutoModerationRuleCreate:
         case Events.AutoModerationRuleDelete:
           const ruleCreated: AutoModerationRule = args[0];
+
           data.rule = { ...ruleCreated };
           break;
 
         case Events.AutoModerationRuleUpdate:
-          const oldRule: AutoModerationRule | null = args[0]; // AutoModerationRule trước khi thay đổi
-          const newRule: AutoModerationRule = args[1]; // AutoModerationRule sau khi thay đổi
+          const oldRule: AutoModerationRule | null = args[0];
+          const newRule: AutoModerationRule = args[1];
+
           data.oldRule = { ...oldRule };
           data.newRule = { ...newRule };
           break;
@@ -803,8 +907,9 @@ export class TriggerEventHandler {
         // Poll event
         case Events.MessagePollVoteAdd:
         case Events.MessagePollVoteRemove:
-          const pollVoteAdd: PollAnswer = args[0]; // PollVote
-          const userId: string = args[1]; // User ID
+          const pollVoteAdd: PollAnswer = args[0];
+          const userId: string = args[1];
+
           data.pollVote = { ...pollVoteAdd };
           data.userId = userId;
           break;
@@ -818,5 +923,99 @@ export class TriggerEventHandler {
         this.triggerInstance.helpers.returnJsonArray([data]),
       ]);
     });
+  }
+
+  // Helper method to extract guild ID from different event types
+  private getGuildIdFromEvent(event: string, args: any[]): string | undefined {
+    switch (event) {
+      case Events.MessageDelete:
+      case Events.MessageUpdate:
+        return args[0]?.guildId;
+
+      case Events.MessageReactionAdd:
+      case Events.MessageReactionRemove:
+        return args[0]?.message.guildId;
+
+      case Events.ChannelCreate:
+      case Events.ChannelDelete:
+      case Events.ChannelUpdate:
+        return args[0]?.guildId;
+
+      case Events.GuildAvailable:
+      case Events.GuildCreate:
+      case Events.GuildDelete:
+      case Events.GuildUnavailable:
+        return args[0]?.id;
+
+      case Events.GuildMemberAdd:
+      case Events.GuildMemberAvailable:
+      case Events.GuildMemberRemove:
+        return args[0]?.guild?.id;
+
+      case Events.GuildRoleCreate:
+      case Events.GuildRoleDelete:
+      case Events.GuildRoleUpdate:
+        return args[0]?.guild?.id;
+
+      default:
+        return undefined;
+    }
+  }
+
+  // Helper method to extract channel ID from different event types
+  private getChannelIdFromEvent(event: string, args: any[]): string | undefined {
+    switch (event) {
+      case Events.MessageDelete:
+      case Events.MessageUpdate:
+        return args[0]?.channelId;
+
+      case Events.MessageReactionAdd:
+      case Events.MessageReactionRemove:
+        return args[0]?.message.channelId;
+
+      case Events.ChannelCreate:
+      case Events.ChannelDelete:
+      case Events.ChannelUpdate:
+        return args[0]?.id;
+
+      default:
+        return undefined;
+    }
+  }
+
+  // Helper method to extract user ID from different event types
+  private getUserIdFromEvent(event: string, args: any[]): string | undefined {
+    switch (event) {
+      case Events.MessageDelete:
+      case Events.MessageUpdate:
+        return args[0]?.author?.id;
+
+      case Events.MessageReactionAdd:
+      case Events.MessageReactionRemove:
+        return args[1]?.id;
+
+      case Events.GuildMemberAdd:
+      case Events.GuildMemberAvailable:
+      case Events.GuildMemberRemove:
+      case Events.GuildMemberUpdate:
+        return args[0]?.id;
+
+      default:
+        return undefined;
+    }
+  }
+
+  // Helper method to extract member from different event types
+  private getMemberFromEvent(event: string, args: any[]): GuildMember | undefined {
+    switch (event) {
+      case Events.GuildMemberAdd:
+      case Events.GuildMemberAvailable:
+      case Events.GuildMemberRemove:
+      case Events.GuildMemberUpdate:
+        return args[0];
+
+      default:
+        return undefined;
+    }
   }
 }

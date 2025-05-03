@@ -157,5 +157,50 @@ export const DiscordTriggerDescription: INodeTypeDescription = {
         },
       },
     },
+    {
+      displayName: "Additional Fields",
+      name: "additionalFields",
+      type: "collection",
+      placeholder: "Add Field",
+      default: {},
+      options: [
+        {
+          displayName: "Server IDs",
+          name: "serverIds",
+          type: "string",
+          default: "",
+          placeholder: "123456789012345678,123456789012345678",
+          description:
+            "Comma-separated list of server IDs to filter the event data by",
+        },
+        {
+          displayName: "Channel IDs",
+          name: "channelIds",
+          type: "string",
+          default: "",
+          placeholder: "123456789012345678,123456789012345678",
+          description:
+            "Comma-separated list of channel IDs to filter the event data by",
+        },
+        {
+          displayName: "Role IDs",
+          name: "roleIds",
+          type: "string",
+          default: "",
+          placeholder: "123456789012345678,123456789012345678",
+          description:
+            "Comma-separated list of role IDs to filter the event data by",
+        },
+        {
+          displayName: "User IDs",
+          name: "userIds",
+          type: "string",
+          default: "",
+          placeholder: "123456789012345678,123456789012345678",
+          description:
+            "Comma-separated list of user IDs to filter the event data by",
+        },
+      ],
+    },
   ],
 };
