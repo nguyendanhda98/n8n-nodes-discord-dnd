@@ -5,7 +5,6 @@ export interface ITriggerParameters {
   directMessage?: boolean;
   pattern?: string;
   value?: string;
-  caseSensitive?: boolean;
   serverIds?: string[];
   channelIds?: string[];
   roleIds?: string[];

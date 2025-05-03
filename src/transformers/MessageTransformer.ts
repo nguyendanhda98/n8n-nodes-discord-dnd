@@ -30,7 +30,9 @@ export async function messageToJson(message: Message): Promise<any> {
     mentions: {
       ...message.mentions,
     },
-
+    author: {
+      ...message.author,
+    },
     repliedMessage: { ...repliedMessage },
   };
   return data;

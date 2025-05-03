@@ -58,7 +58,6 @@ export class TriggerEventHandler {
     directMessage: boolean = false,
     pattern: string = "botMention",
     value: string = "",
-    caseSensitive: boolean = false,
     serverIds: string[] = [],
     channelIds: string[] = [],
     roleIds: string[] = [],
@@ -119,11 +118,8 @@ export class TriggerEventHandler {
         if (pattern) {
           let shouldTrigger = false;
 
-          const content = caseSensitive
-            ? message.content
-            : message.content.toLowerCase();
-
-          const filterValue = caseSensitive ? value : value.toLowerCase();
+          const content = message.content.toLowerCase();
+          const filterValue = value.toLowerCase();
 
           switch (pattern) {
             case PatternType.BOT_MENTION:
@@ -159,7 +155,7 @@ export class TriggerEventHandler {
 
             case PatternType.REGEX:
               try {
-                const regex = new RegExp(value, !caseSensitive ? "i" : "");
+                const regex = new RegExp(value, "i");
                 shouldTrigger = regex.test(message.content);
               } catch (error) {
                 console.error(`Invalid regex pattern: ${value}`, error);
@@ -220,36 +216,11 @@ export class TriggerEventHandler {
         }
       }
 
-      // Helper to enrich user/member info with roles
-      const enrichMember = async (memberOrUser: any, guildId?: string) => {
-        if (!memberOrUser) return null;
-
-        const guild = guildId ? this.client.guilds.cache.get(guildId) : null;
-        const member = guild
-          ? await guild.members.fetch(memberOrUser.id).catch(() => null)
-          : null;
-
-        return {
-          ...memberOrUser,
-          roles:
-            member?.roles.cache.map((role: Role) => ({
-              ...role,
-            })) || [],
-        };
-      };
-
       switch (event) {
         // Message events
         case Events.MessageCreate:
           const message: Message = args[0];
           data.message = await messageToJson(message);
-
-          // Use the guild ID from the message when enriching the author
-          if (message.author && message.guildId) {
-            data.user = await enrichMember(message.author, message.guildId);
-          } else {
-            data.user = { ...message.author };
-          }
           break;
 
         case Events.MessageDelete:
@@ -291,10 +262,9 @@ export class TriggerEventHandler {
             ...messageReaction,
             message: await messageReaction.message.fetch(),
           };
-          data.user = await enrichMember(
-            reactUser,
-            messageReaction.message.guildId || undefined
-          );
+          data.user = {
+            ...reactUser,
+          };
           data.details = { ...details };
           break;
 
@@ -320,11 +290,7 @@ export class TriggerEventHandler {
 
         case Events.TypingStart:
           const typing: Typing = args[0];
-
           data.typing = { ...typing };
-          if (typing.user) {
-            data.user = await enrichMember(typing.user);
-          }
           break;
 
         // Guild events
@@ -372,12 +338,6 @@ export class TriggerEventHandler {
                 pinned: latestPinnedMessage.pinned,
                 pinnedAt: pinTimestamp.toISOString(),
               };
-
-              if (latestPinnedMessage.guild && latestPinnedMessage.member) {
-                (data.pinnedMessage as IDataObject).member = await enrichMember(
-                  latestPinnedMessage.member
-                );
-              }
             } else {
               console.log(
                 "🚀 ~ channelPinsUpdate - Không có tin nhắn ghim nào trong kênh."
@@ -963,7 +923,10 @@ export class TriggerEventHandler {
   }
 
   // Helper method to extract channel ID from different event types
-  private getChannelIdFromEvent(event: string, args: any[]): string | undefined {
+  private getChannelIdFromEvent(
+    event: string,
+    args: any[]
+  ): string | undefined {
     switch (event) {
       case Events.MessageDelete:
       case Events.MessageUpdate:
@@ -1006,7 +969,10 @@ export class TriggerEventHandler {
   }
 
   // Helper method to extract member from different event types
-  private getMemberFromEvent(event: string, args: any[]): GuildMember | undefined {
+  private getMemberFromEvent(
+    event: string,
+    args: any[]
+  ): GuildMember | undefined {
     switch (event) {
       case Events.GuildMemberAdd:
       case Events.GuildMemberAvailable:

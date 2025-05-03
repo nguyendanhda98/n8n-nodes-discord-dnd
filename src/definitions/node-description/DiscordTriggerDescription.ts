@@ -146,18 +146,6 @@ export const DiscordTriggerDescription: INodeTypeDescription = {
       },
     },
     {
-      displayName: "Case Sensitive",
-      name: "caseSensitive",
-      type: "boolean",
-      default: false,
-      displayOptions: {
-        show: {
-          triggerType: ["message"],
-          pattern: ["contains", "startsWith", "endsWith", "equals"],
-        },
-      },
-    },
-    {
       displayName: "Additional Fields",
       name: "additionalFields",
       type: "collection",

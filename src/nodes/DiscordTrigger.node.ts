@@ -34,7 +34,6 @@ export class DiscordTrigger implements INodeType {
       
       if (["contains", "startsWith", "endsWith", "equals", "regex"].includes(parameters.pattern)) {
         parameters.value = this.getNodeParameter("value", "") as string;
-        parameters.caseSensitive = this.getNodeParameter("caseSensitive", false) as boolean;
       }
     }
     
@@ -77,7 +76,6 @@ export class DiscordTrigger implements INodeType {
       parameters.directMessage,
       parameters.pattern,
       parameters.value,
-      parameters.caseSensitive,
       parameters.serverIds,
       parameters.channelIds,
       parameters.roleIds,
