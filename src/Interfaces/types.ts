@@ -42,3 +42,23 @@ export enum TriggerType {
   AUTO_MODERATION = "autoModeration",
   POLL = "poll",
 }
+
+export enum ActionType {
+  MESSAGE = "message",
+}
+
+export enum ActionEventType {
+  SEND_TYPING = "sendTyping",
+  SEND_MESSAGE = "sendMessage",
+  DELETE_MESSAGE = "deleteMessage",
+  EDIT_MESSAGE = "editMessage",
+  REACT_TO_MESSAGE = "reactToMessage",
+  REMOVE_REACTION = "removeReaction",
+  PIN_MESSAGE = "pinMessage",
+  UNPIN_MESSAGE = "unpinMessage",
+  ADD_REACTION = "addReaction",
+  REMOVE_REACTION_EMOJI = "removeReactionEmoji",
+  DELETE_REACTION_EMOJI = "deleteReactionEmoji",
+  DELETE_ALL_REACTIONS = "deleteAllReactions",
+  DELETE_ALL_REACTIONS_EMOJI = "deleteAllReactionsEmoji",
+}
