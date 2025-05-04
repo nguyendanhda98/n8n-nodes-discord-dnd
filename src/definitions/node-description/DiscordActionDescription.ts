@@ -120,6 +120,11 @@ export const DiscordActionDescription: INodeTypeDescription = {
             "Fill this to make your message a reply. Add the message ID.",
         },
       ],
+      displayOptions: {
+        show: {
+          action: [ActionEventType.SEND_MESSAGE],
+        },
+      },
     },
     {
       displayName: "Embeds",
