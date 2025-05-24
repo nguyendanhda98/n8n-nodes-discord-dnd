@@ -2,20 +2,18 @@ import { INodeTypeDescription } from "n8n-workflow";
 import { PatternType, TriggerType } from "../../Interfaces/types";
 
 export const DiscordTriggerDescription: INodeTypeDescription = {
-  displayName: "Discord Trigger",
-  name: "discordTrigger",
+  displayName: "Discord Trigger DND",
+  name: "discordTriggerDnd",
   icon: "file:../assets/icon/discord.svg",
-  group: ["trigger"],
-  version: 1,
+  group: ["trigger"],  version: 1,
   description: "Starts the workflow when Discord events occur",
   defaults: {
-    name: "Discord Trigger",
+    name: "Discord Trigger DND",
   },
-  inputs: [],
-  outputs: ["main"],
+  inputs: [],  outputs: ["main"],
   credentials: [
     {
-      name: "discordApi",
+      name: "discordApiDnd",
       required: true,
     },
   ],

@@ -22,9 +22,8 @@ import { ActionEventHandler } from "../handlers/action/ActionEventHandler";
 export class DiscordActions implements INodeType {
   description = DiscordActionDescription;
   methods = DiscordActionMethods;
-
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-    const credentials = await this.getCredentials("discordApi");
+    const credentials = await this.getCredentials("discordApiDnd");
     const parameters: IActionParameters = {
       actionType: this.getNodeParameter("actionType", 0) as string,
       action: this.getNodeParameter("action", 0) as string,

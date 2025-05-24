@@ -4,8 +4,8 @@ import {
 } from 'n8n-workflow';
 
 export class DiscordApi implements ICredentialType {
-	name = 'discordApi';
-	displayName = 'Discord API';
+	name = 'discordApiDnd';
+	displayName = 'Discord API DND';
 	documentationUrl = 'https://discord.com/developers/docs/intro';
 	properties: INodeProperties[] = [
 		{

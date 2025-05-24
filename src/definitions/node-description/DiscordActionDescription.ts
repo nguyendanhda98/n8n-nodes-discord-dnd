@@ -2,20 +2,20 @@ import { INodeTypeDescription } from "n8n-workflow";
 import { ActionEventType } from "../../Interfaces/types";
 import { EmbedType } from "discord.js";
 export const DiscordActionDescription: INodeTypeDescription = {
-  displayName: "Discord Action",
-  name: "discordAction",
+  displayName: "Discord Action DND",
+  name: "discordActionDnd",
   icon: "file:../assets/icon/discord.svg",
   group: ["output"],
   version: 1,
   description: "Perform Discord bot actions",
   defaults: {
-    name: "Discord Action",
+    name: "Discord Action DND",
   },
   inputs: ["main"],
   outputs: ["main"],
   credentials: [
     {
-      name: "discordApi",
+      name: "discordApiDnd",
       required: true,
     },
   ],
@@ -55,7 +55,7 @@ export const DiscordActionDescription: INodeTypeDescription = {
         "Whether to send the message as a direct message to a user instead of to a channel",
       displayOptions: {
         show: {
-          action: [ActionEventType.SEND_MESSAGE],
+          action: [ActionEventType.SEND_TYPING, ActionEventType.SEND_MESSAGE],
         },
       },
     },
@@ -69,7 +69,7 @@ export const DiscordActionDescription: INodeTypeDescription = {
       description: "The ID of the channel to send the action to",
       displayOptions: {
         show: {
-          action: [ActionEventType.SEND_MESSAGE, ActionEventType.SEND_TYPING],
+          action: [ActionEventType.SEND_TYPING, ActionEventType.SEND_MESSAGE],
           sendAsDM: [false],
         },
       },

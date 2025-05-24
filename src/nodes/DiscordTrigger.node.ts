@@ -15,10 +15,9 @@ import { ClientOptions } from "discord.js";
 export class DiscordTrigger implements INodeType {
   description = DiscordTriggerDescription;
   methods = DiscordTriggerMethods;
-
   async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
     const credentials = (await this.getCredentials(
-      "discordApi"
+      "discordApiDnd"
     )) as ICredentialDataDecryptedObject;
 
     const parameters: ITriggerParameters = {

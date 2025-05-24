@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-discord-dnd",
-  "version": "0.1.111",
+  "version": "0.1.115",
   "description": "n8n node to create triggers for Discord events",
   "keywords": [
     "n8n",
@@ -26,8 +26,7 @@
   },
   "files": [
     "dist"
-  ],
-  "n8n": {
+  ],  "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
       "dist/credentials/DiscordApi.credentials.js"
