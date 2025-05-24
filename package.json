@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-discord-dnd",
-  "version": "0.1.115",
+  "version": "1.0.0",
   "description": "n8n node to create triggers for Discord events",
   "keywords": [
     "n8n",
@@ -9,12 +9,18 @@
     "discord",
     "trigger",
     "webhook"
-  ],
-  "author": {
+  ],  "author": {
     "name": "NguyenDanhDa"
   },
   "license": "MIT",
-  "main": "index.js",
+  "main": "index.js",  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nguyendanhda98/n8n-nodes-discord-dnd.git"
+  },
+  "homepage": "https://github.com/nguyendanhda98/n8n-nodes-discord-dnd#readme",
+  "bugs": {
+    "url": "https://github.com/nguyendanhda98/n8n-nodes-discord-dnd/issues"
+  },
   "scripts": {
     "dev": "npm run watch",
     "build": "tsc && gulp build:icons",
