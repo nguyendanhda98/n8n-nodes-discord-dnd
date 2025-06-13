@@ -79,9 +79,6 @@ export const DiscordActionDescription: INodeTypeDescription = {
             ActionEventType.UNPIN_MESSAGE,
           ],
         },
-        hide: {
-          sendAsDM: [true],
-        },
       },
     },
     {
@@ -98,9 +95,6 @@ export const DiscordActionDescription: INodeTypeDescription = {
             ActionEventType.SEND_TYPING,
             ActionEventType.REMOVE_REACTION,
           ],
-        },
-        hide: {
-          sendAsDM: [false],
         },
       },
     },

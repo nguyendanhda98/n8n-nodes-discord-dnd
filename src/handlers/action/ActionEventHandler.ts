@@ -409,18 +409,13 @@ export class ActionEventHandler {
         ) as string;
         const userId = this.actionInstance.getNodeParameter(
           "userId",
-          0,
-          ""
+          0
         ) as string;
         const removeEmoji = this.actionInstance.getNodeParameter(
           "emoji",
           0
         ) as string;
-        const all = this.actionInstance.getNodeParameter(
-          "all",
-          0,
-          false
-        ) as boolean;
+        const all = this.actionInstance.getNodeParameter("all", 0) as boolean;
         const removeReactChannel = (await this.client.channels.fetch(
           removeReactChannelId
         )) as TextChannel | DMChannel | ThreadChannel;
