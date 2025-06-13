@@ -411,11 +411,19 @@ export class ActionEventHandler {
           "emoji",
           0
         ) as string;
-
+        const all = this.actionInstance.getNodeParameter(
+          "all",
+          0,
+          false
+        ) as boolean;
         const removeReactChannel = (await this.client.channels.fetch(
           removeReactChannelId
         )) as TextChannel | DMChannel | ThreadChannel;
-
+        const userId = this.actionInstance.getNodeParameter(
+          "userId",
+          0,
+          ""
+        ) as string;
         if (!removeReactChannel?.isTextBased()) {
           throw new Error("The provided channel is not a text channel!");
         }
@@ -424,17 +432,57 @@ export class ActionEventHandler {
           const messageToRemoveReact = await removeReactChannel.messages.fetch(
             removeReactMessageId
           );
+          if (all) {
+            // Remove all reactions from the message
+            await messageToRemoveReact.reactions
+              .removeAll()
+              .catch((error: any) => {
+                throw new Error(
+                  `Failed to remove all reactions: ${error.message}`
+                );
+              });
+            data.success = true;
+            data.message = "All reactions removed successfully.";
+            return data;
+          }
+          // Remove all reactions from user if userId is provided and removeEmoji is not specified
+          if (userId && !removeEmoji) {
+            const user = await this.client.users.fetch(userId);
+            if (!user) {
+              throw new Error("User not found.");
+            }
+            const reactions = messageToRemoveReact.reactions.cache.filter(
+              (reaction: MessageReaction) => reaction.users.cache.has(user.id)
+            );
+            for (const reaction of reactions.values()) {
+              await reaction.users.remove(user.id);
+            }
+            data.success = true;
+            data.message = "All reactions from user removed successfully.";
+            return data;
+          }
+          // Remove a specific reaction
           const reaction = messageToRemoveReact.reactions.cache.find(
             (r) =>
               r.emoji.name === removeEmoji || r.emoji.toString() === removeEmoji
           );
 
           if (reaction) {
-            if (!this.client.user)
-              throw new Error("Client user is not initialized");
-            await reaction.users.remove(this.client.user.id);
-            data.success = true;
-            data.message = "Reaction removed successfully.";
+            // If a user ID is provided, remove the reaction for that user
+            if (userId) {
+              const user = await this.client.users.fetch(userId);
+              if (!user) {
+                throw new Error("User not found.");
+              }
+              await reaction.users.remove(user.id);
+            } else if (this.client.user) {
+              // If no user ID is provided, remove the bot's reaction
+              if (!this.client.user)
+                throw new Error("Client user is not initialized");
+              await reaction.users.remove(this.client.user.id);
+              data.success = true;
+              data.message = "Reaction removed successfully.";
+            }
           } else {
             throw new Error("Reaction not found on the message.");
           }

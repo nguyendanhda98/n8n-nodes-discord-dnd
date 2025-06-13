@@ -55,16 +55,7 @@ export const DiscordActionDescription: INodeTypeDescription = {
         "Whether to send the message as a direct message to a user instead of to a channel",
       displayOptions: {
         show: {
-          action: [
-            ActionEventType.SEND_TYPING,
-            ActionEventType.SEND_MESSAGE,
-            ActionEventType.DELETE_MESSAGE,
-            ActionEventType.EDIT_MESSAGE,
-            ActionEventType.REACT_TO_MESSAGE,
-            ActionEventType.REMOVE_REACTION,
-            ActionEventType.PIN_MESSAGE,
-            ActionEventType.UNPIN_MESSAGE,
-          ],
+          action: [ActionEventType.SEND_TYPING, ActionEventType.SEND_MESSAGE],
         },
       },
     },
@@ -81,7 +72,12 @@ export const DiscordActionDescription: INodeTypeDescription = {
           action: [
             ActionEventType.SEND_TYPING,
             ActionEventType.SEND_MESSAGE,
+            ActionEventType.DELETE_MESSAGE,
+            ActionEventType.EDIT_MESSAGE,
+            ActionEventType.REACT_TO_MESSAGE,
             ActionEventType.REMOVE_REACTION,
+            ActionEventType.PIN_MESSAGE,
+            ActionEventType.UNPIN_MESSAGE,
           ],
           sendAsDM: [false],
         },
@@ -91,14 +87,18 @@ export const DiscordActionDescription: INodeTypeDescription = {
       displayName: "User ID",
       name: "userId",
       type: "string",
-      required: true,
       default: "",
       placeholder: "123456789012345678",
-      description: "The ID of the user to send the direct message to",
+      description: "The ID of the user",
       displayOptions: {
         show: {
-          action: [ActionEventType.SEND_MESSAGE, ActionEventType.SEND_TYPING],
+          action: [
+            ActionEventType.SEND_MESSAGE,
+            ActionEventType.SEND_TYPING,
+            ActionEventType.REMOVE_REACTION,
+          ],
           sendAsDM: [true],
+          all: [false],
         },
       },
     },
@@ -503,7 +503,6 @@ export const DiscordActionDescription: INodeTypeDescription = {
       displayName: "Emoji",
       name: "emoji",
       type: "string",
-      required: true,
       default: "👍",
       description:
         "The emoji to use as a reaction (Unicode emoji or custom emoji ID)",
@@ -513,6 +512,20 @@ export const DiscordActionDescription: INodeTypeDescription = {
             ActionEventType.REACT_TO_MESSAGE,
             ActionEventType.REMOVE_REACTION,
           ],
+          all: [false],
+        },
+      },
+    },
+    {
+      displayName: "All",
+      name: "all",
+      type: "boolean",
+      default: false,
+      description:
+        "Whether to remove all reactions from the message. Only applies to 'Remove Reaction' action.",
+      displayOptions: {
+        show: {
+          action: [ActionEventType.REMOVE_REACTION],
         },
       },
     },
