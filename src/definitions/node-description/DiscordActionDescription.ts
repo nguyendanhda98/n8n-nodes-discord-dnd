@@ -55,7 +55,16 @@ export const DiscordActionDescription: INodeTypeDescription = {
         "Whether to send the message as a direct message to a user instead of to a channel",
       displayOptions: {
         show: {
-          action: [ActionEventType.SEND_TYPING, ActionEventType.SEND_MESSAGE],
+          action: [
+            ActionEventType.SEND_TYPING,
+            ActionEventType.SEND_MESSAGE,
+            ActionEventType.DELETE_MESSAGE,
+            ActionEventType.EDIT_MESSAGE,
+            ActionEventType.REACT_TO_MESSAGE,
+            ActionEventType.REMOVE_REACTION,
+            ActionEventType.PIN_MESSAGE,
+            ActionEventType.UNPIN_MESSAGE,
+          ],
         },
       },
     },
@@ -69,7 +78,11 @@ export const DiscordActionDescription: INodeTypeDescription = {
       description: "The ID of the channel to send the action to",
       displayOptions: {
         show: {
-          action: [ActionEventType.SEND_TYPING, ActionEventType.SEND_MESSAGE],
+          action: [
+            ActionEventType.SEND_TYPING,
+            ActionEventType.SEND_MESSAGE,
+            ActionEventType.REMOVE_REACTION,
+          ],
           sendAsDM: [false],
         },
       },

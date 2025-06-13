@@ -91,10 +91,14 @@ export class ActionEventHandler {
           { embed: [] }
         ) as { embed: any[] };
 
-        if (embedsCollection && embedsCollection.embed && embedsCollection.embed.length > 0) {
+        if (
+          embedsCollection &&
+          embedsCollection.embed &&
+          embedsCollection.embed.length > 0
+        ) {
           embeds = embedsCollection.embed.map((embed) => {
             const inputMethod = embed.inputMethod || "fields";
-            
+
             // Handle JSON embeds
             if (inputMethod === "json") {
               try {
@@ -111,18 +115,18 @@ export class ActionEventHandler {
               description: embed.description || undefined,
               url: embed.url || undefined,
               color: embed.color || undefined,
-              timestamp: embed.timestamp ? new Date(embed.timestamp).toISOString() : undefined,
+              timestamp: embed.timestamp
+                ? new Date(embed.timestamp).toISOString()
+                : undefined,
             };
 
             // Process embed fields if they exist
             if (embed.fields && embed.fields.field) {
-              processedEmbed.fields = embed.fields.field.map(
-                (field: any) => ({
-                  name: field.name || "Field",
-                  value: field.value || "Value",
-                  inline: field.inline || false,
-                })
-              );
+              processedEmbed.fields = embed.fields.field.map((field: any) => ({
+                name: field.name || "Field",
+                value: field.value || "Value",
+                inline: field.inline || false,
+              }));
             }
 
             // Process thumbnail and image
