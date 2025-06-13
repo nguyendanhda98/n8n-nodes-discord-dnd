@@ -101,7 +101,6 @@ export const DiscordActionDescription: INodeTypeDescription = {
         },
         hide: {
           sendAsDM: [false],
-          all: [true],
         },
       },
     },

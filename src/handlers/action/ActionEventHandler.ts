@@ -450,6 +450,28 @@ export class ActionEventHandler {
                 );
               }
             }
+            // Remove all reactions from user if userId is provided and removeEmoji is not specified
+            if (userId && !removeEmoji) {
+              const user = await this.client.users.fetch(userId);
+              if (!user) {
+                throw new Error("User not found.");
+              }
+              const reactions = messageToRemoveReact.reactions.cache.filter(
+                (reaction: MessageReaction) => reaction.users.cache.has(user.id)
+              );
+              try {
+                for (const reaction of reactions.values()) {
+                  await reaction.users.remove(user.id);
+                }
+              } catch (error: any) {
+                throw new Error(
+                  `Failed to remove reactions from user: ${error.message}`
+                );
+              }
+              data.success = true;
+              data.message = "All reactions from user removed successfully.";
+              return data;
+            }
             // If no emoji is specified, remove all reactions
             // Remove all reactions from the message
             await messageToRemoveReact.reactions
@@ -463,28 +485,7 @@ export class ActionEventHandler {
             data.message = "All reactions removed successfully.";
             return data;
           }
-          // Remove all reactions from user if userId is provided and removeEmoji is not specified
-          if (userId && !removeEmoji) {
-            const user = await this.client.users.fetch(userId);
-            if (!user) {
-              throw new Error("User not found.");
-            }
-            const reactions = messageToRemoveReact.reactions.cache.filter(
-              (reaction: MessageReaction) => reaction.users.cache.has(user.id)
-            );
-            try {
-              for (const reaction of reactions.values()) {
-                await reaction.users.remove(user.id);
-              }
-            } catch (error: any) {
-              throw new Error(
-                `Failed to remove reactions from user: ${error.message}`
-              );
-            }
-            data.success = true;
-            data.message = "All reactions from user removed successfully.";
-            return data;
-          }
+
           // Remove a specific reaction
           const reaction = messageToRemoveReact.reactions.cache.find(
             (r) =>
@@ -498,15 +499,25 @@ export class ActionEventHandler {
               if (!user) {
                 throw new Error("User not found.");
               }
-              await reaction.users.remove(user.id);
-            } else if (this.client.user) {
+              await reaction.users.remove(user.id).catch((error: any) => {
+                throw new Error(
+                  `Failed to remove reaction from user: ${error.message}`
+                );
+              });
+            } else {
               // If no user ID is provided, remove the bot's reaction
               if (!this.client.user)
                 throw new Error("Client user is not initialized");
-              await reaction.users.remove(this.client.user.id);
-              data.success = true;
-              data.message = "Reaction removed successfully.";
+              await reaction.users
+                .remove(this.client.user.id)
+                .catch((error: any) => {
+                  throw new Error(
+                    `Failed to remove reaction from the bot: ${error.message}`
+                  );
+                });
             }
+            data.success = true;
+            data.message = "Reaction removed successfully.";
           } else {
             throw new Error("Reaction not found on the message.");
           }
