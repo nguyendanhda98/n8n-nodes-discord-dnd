@@ -432,25 +432,23 @@ export class ActionEventHandler {
           if (all) {
             // Remove all reactions from user if userId is provided and removeEmoji is not specified
             if (userId) {
-              const user = await this.client.users.fetch(userId);
-              if (!user) {
-                throw new Error("User not found.");
-              }
-              const reactions = messageToRemoveReact.reactions.cache.filter(
-                (reaction: MessageReaction) => reaction.users.cache.has(user.id)
-              );
               try {
+                const reactions = messageToRemoveReact.reactions.cache.filter(
+                  (reaction: MessageReaction) =>
+                    reaction.users.cache.has(userId)
+                );
+
                 for (const reaction of reactions.values()) {
-                  await reaction.users.remove(user.id);
+                  await reaction.users.remove(userId);
                 }
+                data.success = true;
+                data.message = "All reactions from user removed successfully.";
+                return data;
               } catch (error: any) {
                 throw new Error(
                   `Failed to remove reactions from user: ${error.message}`
                 );
               }
-              data.success = true;
-              data.message = "All reactions from user removed successfully.";
-              return data;
             }
             // If removeEmoji is specified, remove all reactions of that emoji
             if (removeEmoji) {
@@ -491,11 +489,7 @@ export class ActionEventHandler {
           if (reaction) {
             // If a user ID is provided, remove the reaction for that user
             if (userId) {
-              const user = await this.client.users.fetch(userId);
-              if (!user) {
-                throw new Error("User not found.");
-              }
-              await reaction.users.remove(user.id).catch((error: any) => {
+              await reaction.users.remove(userId).catch((error: any) => {
                 throw new Error(
                   `Failed to remove reaction from user: ${error.message}`
                 );
