@@ -407,6 +407,11 @@ export class ActionEventHandler {
           "messageId",
           0
         ) as string;
+        const userId = this.actionInstance.getNodeParameter(
+          "userId",
+          0,
+          ""
+        ) as string;
         const removeEmoji = this.actionInstance.getNodeParameter(
           "emoji",
           0
@@ -419,11 +424,6 @@ export class ActionEventHandler {
         const removeReactChannel = (await this.client.channels.fetch(
           removeReactChannelId
         )) as TextChannel | DMChannel | ThreadChannel;
-        const userId = this.actionInstance.getNodeParameter(
-          "userId",
-          0,
-          ""
-        ) as string;
         if (!removeReactChannel?.isTextBased()) {
           throw new Error("The provided channel is not a text channel!");
         }
@@ -432,7 +432,25 @@ export class ActionEventHandler {
           const messageToRemoveReact = await removeReactChannel.messages.fetch(
             removeReactMessageId
           );
+
+          // If 'all' is true, remove all reactions from the message
           if (all) {
+            // If removeEmoji is specified, remove all reactions of that emoji
+            if (removeEmoji) {
+              try {
+                await messageToRemoveReact.reactions.cache
+                  .get(removeEmoji)
+                  ?.remove();
+                data.success = true;
+                data.message = `All reactions for emoji ${removeEmoji} removed successfully.`;
+                return data;
+              } catch (error: any) {
+                throw new Error(
+                  `Failed to remove reactions for emoji ${removeEmoji}: ${error.message}`
+                );
+              }
+            }
+            // If no emoji is specified, remove all reactions
             // Remove all reactions from the message
             await messageToRemoveReact.reactions
               .removeAll()
@@ -454,8 +472,14 @@ export class ActionEventHandler {
             const reactions = messageToRemoveReact.reactions.cache.filter(
               (reaction: MessageReaction) => reaction.users.cache.has(user.id)
             );
-            for (const reaction of reactions.values()) {
-              await reaction.users.remove(user.id);
+            try {
+              for (const reaction of reactions.values()) {
+                await reaction.users.remove(user.id);
+              }
+            } catch (error: any) {
+              throw new Error(
+                `Failed to remove reactions from user: ${error.message}`
+              );
             }
             data.success = true;
             data.message = "All reactions from user removed successfully.";
