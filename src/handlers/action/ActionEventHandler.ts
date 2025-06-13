@@ -435,23 +435,8 @@ export class ActionEventHandler {
 
           // If 'all' is true, remove all reactions from the message
           if (all) {
-            // If removeEmoji is specified, remove all reactions of that emoji
-            if (removeEmoji) {
-              try {
-                await messageToRemoveReact.reactions.cache
-                  .get(removeEmoji)
-                  ?.remove();
-                data.success = true;
-                data.message = `All reactions for emoji ${removeEmoji} removed successfully.`;
-                return data;
-              } catch (error: any) {
-                throw new Error(
-                  `Failed to remove reactions for emoji ${removeEmoji}: ${error.message}`
-                );
-              }
-            }
             // Remove all reactions from user if userId is provided and removeEmoji is not specified
-            if (userId && !removeEmoji) {
+            if (userId) {
               const user = await this.client.users.fetch(userId);
               if (!user) {
                 throw new Error("User not found.");
@@ -472,6 +457,22 @@ export class ActionEventHandler {
               data.message = "All reactions from user removed successfully.";
               return data;
             }
+            // If removeEmoji is specified, remove all reactions of that emoji
+            if (removeEmoji) {
+              try {
+                await messageToRemoveReact.reactions.cache
+                  .get(removeEmoji)
+                  ?.remove();
+                data.success = true;
+                data.message = `All reactions for emoji ${removeEmoji} removed successfully.`;
+                return data;
+              } catch (error: any) {
+                throw new Error(
+                  `Failed to remove reactions for emoji ${removeEmoji}: ${error.message}`
+                );
+              }
+            }
+
             // If no emoji is specified, remove all reactions
             // Remove all reactions from the message
             await messageToRemoveReact.reactions
