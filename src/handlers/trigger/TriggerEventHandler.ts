@@ -716,7 +716,11 @@ export class TriggerEventHandler {
           const guildScheduled: GuildScheduledEvent = args[0];
 
           data.guildScheduledEvent = { ...guildScheduled };
-          data.guild = { ...guildScheduled.guild };
+          data.guild = {
+            id: guildScheduled.guild?.id,
+            name: guildScheduled.guild?.name,
+            icon: guildScheduled.guild?.icon,
+          };
           break;
 
         case Events.GuildScheduledEventUpdate:
