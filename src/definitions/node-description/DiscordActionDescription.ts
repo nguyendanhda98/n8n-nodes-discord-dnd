@@ -523,12 +523,27 @@ export const DiscordActionDescription: INodeTypeDescription = {
       },
     },
     {
+      displayName: "Guild ID",
+      name: "guildId",
+      type: "string",
+      default: "",
+      placeholder: "123456789012345678",
+      description: "The ID of the guild (server) to perform the action in",
+      required: true,
+      displayOptions: {
+        show: {
+          action: [ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE],
+        },
+      },
+    },
+    {
       displayName: "Event ID",
       name: "guildScheduledEventId",
       type: "string",
       default: "",
       placeholder: "123456789012345678",
-      description: "The ID of the event",
+      description: "The ID of the scheduled event to update",
+      required: true,
       displayOptions: {
         show: {
           action: [ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE],
@@ -553,7 +568,7 @@ export const DiscordActionDescription: INodeTypeDescription = {
           type: "string",
           default: "",
           description:
-            "The name of the guild scheduled event. Leave blank to keep current name.",
+            "The name of the event. Leave blank to keep current name.",
         },
         {
           displayName: "Start Time",
@@ -561,7 +576,7 @@ export const DiscordActionDescription: INodeTypeDescription = {
           type: "dateTime",
           default: "",
           description:
-            "The start time of the guild scheduled event. Leave blank to keep current start time.",
+            "The start time of the event. Leave blank to keep current start time.",
         },
         {
           displayName: "End Time",
@@ -569,7 +584,7 @@ export const DiscordActionDescription: INodeTypeDescription = {
           type: "dateTime",
           default: "",
           description:
-            "The end time of the guild scheduled event. Leave blank to keep current end time.",
+            "The end time of the event. Leave blank to keep current end time.",
         },
         {
           displayName: "Description",
@@ -577,7 +592,7 @@ export const DiscordActionDescription: INodeTypeDescription = {
           type: "string",
           default: "",
           description:
-            "The description of the guild scheduled event. Leave blank to keep current description.",
+            "The description of the event. Leave blank to keep current description.",
         },
       ],
     },

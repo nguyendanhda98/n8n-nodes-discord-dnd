@@ -521,6 +521,10 @@ export class ActionEventHandler {
           "guildScheduledEventId",
           0
         ) as string;
+        const guildId = this.actionInstance.getNodeParameter(
+          "guildId",
+          0
+        ) as string;
         const updateFields = this.actionInstance.getNodeParameter(
           "updateFields",
           0,
@@ -528,26 +532,33 @@ export class ActionEventHandler {
         ) as IDataObject;
 
         const name = updateFields.name as string | undefined;
-        const scheduledStartTime = updateFields.scheduledStartTime as string | undefined;
-        const scheduledEndTime = updateFields.scheduledEndTime as string | undefined;
+        const scheduledStartTime = updateFields.scheduledStartTime as
+          | string
+          | undefined;
+        const scheduledEndTime = updateFields.scheduledEndTime as
+          | string
+          | undefined;
         const description = updateFields.description as string | undefined;
         try {
-          const guildScheduledEvent = await this.client.guilds.cache
-            .first()
-            ?.scheduledEvents.fetch(guildScheduledEventId);
+          const guild = await this.client.guilds.fetch(guildId);
+          const guildScheduledEvent = await guild.scheduledEvents.fetch(
+            guildScheduledEventId
+          );
 
           if (!guildScheduledEvent) {
             throw new Error("Guild scheduled event not found.");
           }
 
-          const updateFields = {
-            name,
-            scheduledStartTime,
-            scheduledEndTime,
-            description,
-          };
+          const updateData = Object.fromEntries(
+            Object.entries({
+              name,
+              scheduledStartTime,
+              scheduledEndTime,
+              description,
+            }).filter(([_, v]) => v !== undefined)
+          );
 
-          await guildScheduledEvent.edit(updateFields);
+          await guildScheduledEvent.edit(updateData);
 
           data.success = true;
           data.message = "Guild scheduled event updated successfully.";
