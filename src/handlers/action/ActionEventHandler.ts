@@ -516,6 +516,48 @@ export class ActionEventHandler {
         }
         break;
 
+      case ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE:
+        const guildScheduledEventId = this.actionInstance.getNodeParameter(
+          "guildScheduledEventId",
+          0
+        ) as string;
+        const updateFields = this.actionInstance.getNodeParameter(
+          "updateFields",
+          0,
+          {}
+        ) as IDataObject;
+
+        const name = updateFields.name as string | undefined;
+        const scheduledStartTime = updateFields.scheduledStartTime as string | undefined;
+        const scheduledEndTime = updateFields.scheduledEndTime as string | undefined;
+        const description = updateFields.description as string | undefined;
+        try {
+          const guildScheduledEvent = await this.client.guilds.cache
+            .first()
+            ?.scheduledEvents.fetch(guildScheduledEventId);
+
+          if (!guildScheduledEvent) {
+            throw new Error("Guild scheduled event not found.");
+          }
+
+          const updateFields = {
+            name,
+            scheduledStartTime,
+            scheduledEndTime,
+            description,
+          };
+
+          await guildScheduledEvent.edit(updateFields);
+
+          data.success = true;
+          data.message = "Guild scheduled event updated successfully.";
+        } catch (error: any) {
+          throw new Error(
+            `Failed to update guild scheduled event: ${error.message}`
+          );
+        }
+        break;
+
       default:
         throw new Error(`Action "${action}" is not supported.`);
     }

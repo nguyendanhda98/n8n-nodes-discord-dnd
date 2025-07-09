@@ -19,14 +19,11 @@ export const DiscordActionMethods = {
           { name: "Pin Message", value: ActionEventType.PIN_MESSAGE },
           { name: "Unpin Message", value: ActionEventType.UNPIN_MESSAGE },
         ],
-        channel: [
-          // Add channel related actions here in the future
-        ],
-        role: [
-          // Add role related actions here in the future
-        ],
-        member: [
-          // Add member related actions here in the future
+        scheduledEvent: [
+          {
+            name: "Guild Scheduled Event Update",
+            value: ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE,
+          },
         ],
       };
 

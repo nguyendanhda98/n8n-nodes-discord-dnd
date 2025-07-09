@@ -1,5 +1,5 @@
 import { INodeTypeDescription } from "n8n-workflow";
-import { ActionEventType } from "../../Interfaces/types";
+import { ActionEventType, ActionType } from "../../Interfaces/types";
 import { EmbedType } from "discord.js";
 export const DiscordActionDescription: INodeTypeDescription = {
   displayName: "Discord Action DND",
@@ -28,10 +28,8 @@ export const DiscordActionDescription: INodeTypeDescription = {
       default: "message",
       description: "The type of Discord event to action on",
       options: [
-        { name: "Message", value: "message" },
-        { name: "Channel", value: "channel" },
-        { name: "Role", value: "role" },
-        { name: "Member", value: "member" },
+        { name: "Message", value: ActionType.MESSAGE },
+        { name: "Scheduled Event", value: ActionType.SCHEDULED_EVENT },
       ],
     },
     {
@@ -523,6 +521,65 @@ export const DiscordActionDescription: INodeTypeDescription = {
           action: [ActionEventType.REMOVE_REACTION],
         },
       },
+    },
+    {
+      displayName: "Event ID",
+      name: "guildScheduledEventId",
+      type: "string",
+      default: "",
+      placeholder: "123456789012345678",
+      description: "The ID of the event",
+      displayOptions: {
+        show: {
+          action: [ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE],
+        },
+      },
+    },
+    {
+      displayName: "Update Fields",
+      name: "updateFields",
+      type: "collection",
+      placeholder: "Add Field",
+      default: {},
+      displayOptions: {
+        show: {
+          action: [ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE],
+        },
+      },
+      options: [
+        {
+          displayName: "Name",
+          name: "name",
+          type: "string",
+          default: "",
+          description:
+            "The name of the guild scheduled event. Leave blank to keep current name.",
+        },
+        {
+          displayName: "Start Time",
+          name: "scheduledStartTime",
+          type: "dateTime",
+          default: "",
+          description:
+            "The start time of the guild scheduled event. Leave blank to keep current start time.",
+        },
+        {
+          displayName: "End Time",
+          name: "scheduledEndTime",
+          type: "dateTime",
+          default: "",
+          description:
+            "The end time of the guild scheduled event. Leave blank to keep current end time.",
+        },
+        {
+          displayName: "Description",
+          name: "description",
+          type: "string",
+          default: "",
+          description:
+            "The description of the guild scheduled event. Leave blank to keep current description.",
+        },
+      ],
     },
   ],
 };

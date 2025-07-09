@@ -45,6 +45,7 @@ export enum TriggerType {
 
 export enum ActionType {
   MESSAGE = "message",
+  SCHEDULED_EVENT = "scheduledEvent",
 }
 
 export enum ActionEventType {
@@ -61,4 +62,5 @@ export enum ActionEventType {
   DELETE_REACTION_EMOJI = "deleteReactionEmoji",
   DELETE_ALL_REACTIONS = "deleteAllReactions",
   DELETE_ALL_REACTIONS_EMOJI = "deleteAllReactionsEmoji",
+  GUILD_SCHEDULED_EVENT_UPDATE = "guildScheduledEventUpdate",
 }
