@@ -46,6 +46,7 @@ export enum TriggerType {
 export enum ActionType {
   MESSAGE = "message",
   SCHEDULED_EVENT = "scheduledEvent",
+  CHANNEL = "channel",
 }
 
 export enum ActionEventType {
@@ -63,4 +64,9 @@ export enum ActionEventType {
   DELETE_ALL_REACTIONS = "deleteAllReactions",
   DELETE_ALL_REACTIONS_EMOJI = "deleteAllReactionsEmoji",
   GUILD_SCHEDULED_EVENT_UPDATE = "guildScheduledEventUpdate",
+  CREATE_CHANNEL = "createChannel",
+  DELETE_CHANNEL = "deleteChannel",
+  UPDATE_CHANNEL = "updateChannel",
+  GET_CHANNEL = "getChannel",
+  GET_MANY_CHANNELS = "getManyChannels",
 }

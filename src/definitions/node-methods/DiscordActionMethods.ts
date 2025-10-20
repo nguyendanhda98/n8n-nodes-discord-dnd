@@ -25,6 +25,13 @@ export const DiscordActionMethods = {
             value: ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE,
           },
         ],
+        channel: [
+          { name: "Create Channel", value: ActionEventType.CREATE_CHANNEL },
+          { name: "Delete Channel", value: ActionEventType.DELETE_CHANNEL },
+          { name: "Update Channel", value: ActionEventType.UPDATE_CHANNEL },
+          { name: "Get Channel", value: ActionEventType.GET_CHANNEL },
+          { name: "Get Many Channels", value: ActionEventType.GET_MANY_CHANNELS },
+        ],
       };
 
       return actionOptions[type] || [];

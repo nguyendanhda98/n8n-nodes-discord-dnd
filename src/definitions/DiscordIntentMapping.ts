@@ -105,6 +105,11 @@ export function getclientOptions(triggerType: string): ClientOptions {
       partials = [Partials.Message];
       break;
 
+    case "channel":
+      intents = [GatewayIntentBits.Guilds];
+      partials = [Partials.Channel];
+      break;
+
     default:
       throw new Error(`Unsupported type: ${triggerType}`);
   }
