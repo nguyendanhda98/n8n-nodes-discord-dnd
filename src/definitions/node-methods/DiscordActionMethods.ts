@@ -21,7 +21,27 @@ export const DiscordActionMethods = {
         ],
         scheduledEvent: [
           {
-            name: "Guild Scheduled Event Update",
+            name: "Create Event",
+            value: ActionEventType.CREATE_GUILD_SCHEDULED_EVENT,
+          },
+          {
+            name: "Get Event",
+            value: ActionEventType.GET_GUILD_SCHEDULED_EVENT,
+          },
+          {
+            name: "Get Many Events",
+            value: ActionEventType.GET_MANY_GUILD_SCHEDULED_EVENTS,
+          },
+          {
+            name: "Update Event",
+            value: ActionEventType.UPDATE_GUILD_SCHEDULED_EVENT,
+          },
+          {
+            name: "Delete Event",
+            value: ActionEventType.DELETE_GUILD_SCHEDULED_EVENT,
+          },
+          {
+            name: "Guild Scheduled Event Update (Legacy)",
             value: ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE,
           },
         ],

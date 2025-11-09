@@ -533,7 +533,14 @@ export const DiscordActionDescription: INodeTypeDescription = {
       required: true,
       displayOptions: {
         show: {
-          action: [ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE],
+          action: [
+            ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE,
+            ActionEventType.GET_GUILD_SCHEDULED_EVENT,
+            ActionEventType.GET_MANY_GUILD_SCHEDULED_EVENTS,
+            ActionEventType.CREATE_GUILD_SCHEDULED_EVENT,
+            ActionEventType.UPDATE_GUILD_SCHEDULED_EVENT,
+            ActionEventType.DELETE_GUILD_SCHEDULED_EVENT,
+          ],
         },
       },
     },
@@ -543,13 +550,225 @@ export const DiscordActionDescription: INodeTypeDescription = {
       type: "string",
       default: "",
       placeholder: "123456789012345678",
-      description: "The ID of the scheduled event to update",
+      description: "The ID of the scheduled event",
       required: true,
       displayOptions: {
         show: {
-          action: [ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE],
+          action: [
+            ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE,
+            ActionEventType.GET_GUILD_SCHEDULED_EVENT,
+            ActionEventType.UPDATE_GUILD_SCHEDULED_EVENT,
+            ActionEventType.DELETE_GUILD_SCHEDULED_EVENT,
+          ],
         },
       },
+    },
+    // Create Event Fields
+    {
+      displayName: "Event Name",
+      name: "eventName",
+      type: "string",
+      default: "",
+      placeholder: "Weekly Meeting",
+      description: "The name of the scheduled event",
+      required: true,
+      displayOptions: {
+        show: {
+          action: [ActionEventType.CREATE_GUILD_SCHEDULED_EVENT],
+        },
+      },
+    },
+    {
+      displayName: "Start Time",
+      name: "eventStartTime",
+      type: "dateTime",
+      default: "",
+      description: "The start time of the event",
+      required: true,
+      displayOptions: {
+        show: {
+          action: [ActionEventType.CREATE_GUILD_SCHEDULED_EVENT],
+        },
+      },
+    },
+    {
+      displayName: "Entity Type",
+      name: "eventEntityType",
+      type: "options",
+      default: 2,
+      description: "The entity type of the scheduled event",
+      required: true,
+      options: [
+        { name: "Stage Instance", value: 1 },
+        { name: "Voice", value: 2 },
+        { name: "External", value: 3 },
+      ],
+      displayOptions: {
+        show: {
+          action: [ActionEventType.CREATE_GUILD_SCHEDULED_EVENT],
+        },
+      },
+    },
+    {
+      displayName: "Privacy Level",
+      name: "eventPrivacyLevel",
+      type: "options",
+      default: 2,
+      description: "The privacy level of the scheduled event",
+      required: true,
+      options: [
+        { name: "Guild Only", value: 2 },
+      ],
+      displayOptions: {
+        show: {
+          action: [ActionEventType.CREATE_GUILD_SCHEDULED_EVENT],
+        },
+      },
+    },
+    {
+      displayName: "Channel ID",
+      name: "eventChannelId",
+      type: "string",
+      default: "",
+      placeholder: "123456789012345678",
+      description: "The channel ID for the event (required for Stage Instance and Voice)",
+      displayOptions: {
+        show: {
+          action: [ActionEventType.CREATE_GUILD_SCHEDULED_EVENT],
+          eventEntityType: [1, 2],
+        },
+      },
+    },
+    {
+      displayName: "Event Options",
+      name: "eventOptions",
+      type: "collection",
+      placeholder: "Add Option",
+      default: {},
+      displayOptions: {
+        show: {
+          action: [ActionEventType.CREATE_GUILD_SCHEDULED_EVENT],
+        },
+      },
+      options: [
+        {
+          displayName: "Description",
+          name: "description",
+          type: "string",
+          default: "",
+          description: "The description of the event",
+        },
+        {
+          displayName: "End Time",
+          name: "scheduledEndTime",
+          type: "dateTime",
+          default: "",
+          description: "The end time of the event (required for External events)",
+        },
+        {
+          displayName: "Entity Metadata Location",
+          name: "entityMetadataLocation",
+          type: "string",
+          default: "",
+          description: "The location of the event (required for External events)",
+        },
+        {
+          displayName: "Image URL",
+          name: "image",
+          type: "string",
+          default: "",
+          description: "The cover image URL for the event",
+        },
+      ],
+    },
+    // Update Event Fields
+    {
+      displayName: "Update Fields",
+      name: "eventUpdateFields",
+      type: "collection",
+      placeholder: "Add Field",
+      default: {},
+      displayOptions: {
+        show: {
+          action: [ActionEventType.UPDATE_GUILD_SCHEDULED_EVENT],
+        },
+      },
+      options: [
+        {
+          displayName: "Name",
+          name: "name",
+          type: "string",
+          default: "",
+          description: "The new name of the event",
+        },
+        {
+          displayName: "Description",
+          name: "description",
+          type: "string",
+          default: "",
+          description: "The new description of the event",
+        },
+        {
+          displayName: "Start Time",
+          name: "scheduledStartTime",
+          type: "dateTime",
+          default: "",
+          description: "The new start time of the event",
+        },
+        {
+          displayName: "End Time",
+          name: "scheduledEndTime",
+          type: "dateTime",
+          default: "",
+          description: "The new end time of the event",
+        },
+        {
+          displayName: "Channel ID",
+          name: "channelId",
+          type: "string",
+          default: "",
+          description: "The new channel ID for the event",
+        },
+        {
+          displayName: "Entity Type",
+          name: "entityType",
+          type: "options",
+          default: 2,
+          options: [
+            { name: "Stage Instance", value: 1 },
+            { name: "Voice", value: 2 },
+            { name: "External", value: 3 },
+          ],
+          description: "The new entity type of the event",
+        },
+        {
+          displayName: "Status",
+          name: "status",
+          type: "options",
+          default: 1,
+          options: [
+            { name: "Scheduled", value: 1 },
+            { name: "Active", value: 2 },
+            { name: "Completed", value: 3 },
+            { name: "Canceled", value: 4 },
+          ],
+          description: "The new status of the event",
+        },
+        {
+          displayName: "Entity Metadata Location",
+          name: "entityMetadataLocation",
+          type: "string",
+          default: "",
+          description: "The new location for External events",
+        },
+        {
+          displayName: "Image URL",
+          name: "image",
+          type: "string",
+          default: "",
+          description: "The new cover image URL",
+        },
+      ],
     },
     {
       displayName: "Update Fields",

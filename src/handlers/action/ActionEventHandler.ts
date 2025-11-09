@@ -518,6 +518,64 @@ export class ActionEventHandler {
         }
         break;
 
+      case ActionEventType.GET_GUILD_SCHEDULED_EVENT:
+        const getGuildScheduledEventId = this.actionInstance.getNodeParameter(
+          "guildScheduledEventId",
+          0
+        ) as string;
+        const getGuildId = this.actionInstance.getNodeParameter(
+          "guildId",
+          0
+        ) as string;
+
+        try {
+          const guild = await this.client.guilds.fetch(getGuildId);
+          const guildScheduledEvent = await guild.scheduledEvents.fetch(
+            getGuildScheduledEventId
+          );
+
+          if (!guildScheduledEvent) {
+            throw new Error("Guild scheduled event not found.");
+          }
+
+          // Get all information about the event
+          data.id = guildScheduledEvent.id;
+          data.guildId = guildScheduledEvent.guildId;
+          data.channelId = guildScheduledEvent.channelId;
+          data.creatorId = guildScheduledEvent.creatorId;
+          data.name = guildScheduledEvent.name;
+          data.description = guildScheduledEvent.description;
+          data.scheduledStartTimestamp = guildScheduledEvent.scheduledStartTimestamp;
+          data.scheduledEndTimestamp = guildScheduledEvent.scheduledEndTimestamp;
+          data.privacyLevel = guildScheduledEvent.privacyLevel;
+          data.status = guildScheduledEvent.status;
+          data.entityType = guildScheduledEvent.entityType;
+          data.entityId = guildScheduledEvent.entityId;
+          data.entityMetadata = guildScheduledEvent.entityMetadata;
+          data.userCount = guildScheduledEvent.userCount;
+          data.image = guildScheduledEvent.image;
+          data.createdTimestamp = guildScheduledEvent.createdTimestamp;
+          data.url = guildScheduledEvent.url;
+
+          // Add creator information if available
+          if (guildScheduledEvent.creator) {
+            data.creator = {
+              id: guildScheduledEvent.creator.id,
+              username: guildScheduledEvent.creator.username,
+              discriminator: guildScheduledEvent.creator.discriminator,
+              avatar: guildScheduledEvent.creator.avatar,
+              bot: guildScheduledEvent.creator.bot,
+            };
+          }
+
+          data.success = true;
+        } catch (error: any) {
+          throw new Error(
+            `Failed to get guild scheduled event: ${error.message}`
+          );
+        }
+        break;
+
       case ActionEventType.GUILD_SCHEDULED_EVENT_UPDATE:
         const guildScheduledEventId = this.actionInstance.getNodeParameter(
           "guildScheduledEventId",
@@ -567,6 +625,236 @@ export class ActionEventHandler {
         } catch (error: any) {
           throw new Error(
             `Failed to update guild scheduled event: ${error.message}`
+          );
+        }
+        break;
+
+      case ActionEventType.CREATE_GUILD_SCHEDULED_EVENT:
+        const createEventGuildId = this.actionInstance.getNodeParameter(
+          "guildId",
+          0
+        ) as string;
+        const eventName = this.actionInstance.getNodeParameter(
+          "eventName",
+          0
+        ) as string;
+        const eventStartTime = this.actionInstance.getNodeParameter(
+          "eventStartTime",
+          0
+        ) as string;
+        const eventEntityType = this.actionInstance.getNodeParameter(
+          "eventEntityType",
+          0
+        ) as number;
+        const eventPrivacyLevel = this.actionInstance.getNodeParameter(
+          "eventPrivacyLevel",
+          0
+        ) as number;
+        const eventChannelId = this.actionInstance.getNodeParameter(
+          "eventChannelId",
+          0,
+          ""
+        ) as string;
+        const eventOptions = this.actionInstance.getNodeParameter(
+          "eventOptions",
+          0,
+          {}
+        ) as IDataObject;
+
+        try {
+          const createEventGuild = await this.client.guilds.fetch(createEventGuildId);
+
+          const createEventData: any = {
+            name: eventName,
+            scheduledStartTime: new Date(eventStartTime),
+            privacyLevel: eventPrivacyLevel,
+            entityType: eventEntityType,
+          };
+
+          // Add channel for Voice or Stage Instance
+          if ((eventEntityType === 1 || eventEntityType === 2) && eventChannelId) {
+            createEventData.channel = eventChannelId;
+          }
+
+          // Add optional fields
+          if (eventOptions.description) {
+            createEventData.description = eventOptions.description as string;
+          }
+          if (eventOptions.scheduledEndTime) {
+            createEventData.scheduledEndTime = new Date(eventOptions.scheduledEndTime as string);
+          }
+          if (eventOptions.entityMetadataLocation) {
+            createEventData.entityMetadata = {
+              location: eventOptions.entityMetadataLocation as string,
+            };
+          }
+          if (eventOptions.image) {
+            createEventData.image = eventOptions.image as string;
+          }
+
+          const createdEvent = await createEventGuild.scheduledEvents.create(createEventData);
+
+          data.success = true;
+          data.message = "Guild scheduled event created successfully.";
+          data.eventId = createdEvent.id;
+          data.eventUrl = createdEvent.url;
+          data.event = {
+            id: createdEvent.id,
+            name: createdEvent.name,
+            description: createdEvent.description,
+            scheduledStartTimestamp: createdEvent.scheduledStartTimestamp,
+            scheduledEndTimestamp: createdEvent.scheduledEndTimestamp,
+            status: createdEvent.status,
+            entityType: createdEvent.entityType,
+            url: createdEvent.url,
+          };
+        } catch (error: any) {
+          throw new Error(
+            `Failed to create guild scheduled event: ${error.message}`
+          );
+        }
+        break;
+
+      case ActionEventType.GET_MANY_GUILD_SCHEDULED_EVENTS:
+        const getManyEventsGuildId = this.actionInstance.getNodeParameter(
+          "guildId",
+          0
+        ) as string;
+
+        try {
+          const getManyEventsGuild = await this.client.guilds.fetch(getManyEventsGuildId);
+          const events = await getManyEventsGuild.scheduledEvents.fetch();
+
+          const eventsArray = events.map(event => ({
+            id: event.id,
+            guildId: event.guildId,
+            channelId: event.channelId,
+            creatorId: event.creatorId,
+            name: event.name,
+            description: event.description,
+            scheduledStartTimestamp: event.scheduledStartTimestamp,
+            scheduledEndTimestamp: event.scheduledEndTimestamp,
+            privacyLevel: event.privacyLevel,
+            status: event.status,
+            entityType: event.entityType,
+            entityId: event.entityId,
+            entityMetadata: event.entityMetadata,
+            userCount: event.userCount,
+            image: event.image,
+            createdTimestamp: event.createdTimestamp,
+            url: event.url,
+            creator: event.creator ? {
+              id: event.creator.id,
+              username: event.creator.username,
+              discriminator: event.creator.discriminator,
+              avatar: event.creator.avatar,
+              bot: event.creator.bot,
+            } : null,
+          }));
+
+          data.success = true;
+          data.count = eventsArray.length;
+          data.events = eventsArray;
+        } catch (error: any) {
+          throw new Error(
+            `Failed to get guild scheduled events: ${error.message}`
+          );
+        }
+        break;
+
+      case ActionEventType.UPDATE_GUILD_SCHEDULED_EVENT:
+        const updateEventGuildId = this.actionInstance.getNodeParameter(
+          "guildId",
+          0
+        ) as string;
+        const updateEventId = this.actionInstance.getNodeParameter(
+          "guildScheduledEventId",
+          0
+        ) as string;
+        const eventUpdateFields = this.actionInstance.getNodeParameter(
+          "eventUpdateFields",
+          0,
+          {}
+        ) as IDataObject;
+
+        try {
+          const updateEventGuild = await this.client.guilds.fetch(updateEventGuildId);
+          const eventToUpdate = await updateEventGuild.scheduledEvents.fetch(updateEventId);
+
+          if (!eventToUpdate) {
+            throw new Error("Guild scheduled event not found.");
+          }
+
+          const updateEventData: any = {};
+
+          if (eventUpdateFields.name) {
+            updateEventData.name = eventUpdateFields.name as string;
+          }
+          if (eventUpdateFields.description !== undefined) {
+            updateEventData.description = eventUpdateFields.description as string;
+          }
+          if (eventUpdateFields.scheduledStartTime) {
+            updateEventData.scheduledStartTime = new Date(eventUpdateFields.scheduledStartTime as string);
+          }
+          if (eventUpdateFields.scheduledEndTime) {
+            updateEventData.scheduledEndTime = new Date(eventUpdateFields.scheduledEndTime as string);
+          }
+          if (eventUpdateFields.channelId) {
+            updateEventData.channel = eventUpdateFields.channelId as string;
+          }
+          if (eventUpdateFields.entityType !== undefined) {
+            updateEventData.entityType = eventUpdateFields.entityType as number;
+          }
+          if (eventUpdateFields.status !== undefined) {
+            updateEventData.status = eventUpdateFields.status as number;
+          }
+          if (eventUpdateFields.entityMetadataLocation) {
+            updateEventData.entityMetadata = {
+              location: eventUpdateFields.entityMetadataLocation as string,
+            };
+          }
+          if (eventUpdateFields.image) {
+            updateEventData.image = eventUpdateFields.image as string;
+          }
+
+          await eventToUpdate.edit(updateEventData);
+
+          data.success = true;
+          data.message = "Guild scheduled event updated successfully.";
+          data.eventId = eventToUpdate.id;
+        } catch (error: any) {
+          throw new Error(
+            `Failed to update guild scheduled event: ${error.message}`
+          );
+        }
+        break;
+
+      case ActionEventType.DELETE_GUILD_SCHEDULED_EVENT:
+        const deleteEventGuildId = this.actionInstance.getNodeParameter(
+          "guildId",
+          0
+        ) as string;
+        const deleteEventId = this.actionInstance.getNodeParameter(
+          "guildScheduledEventId",
+          0
+        ) as string;
+
+        try {
+          const deleteEventGuild = await this.client.guilds.fetch(deleteEventGuildId);
+          const eventToDelete = await deleteEventGuild.scheduledEvents.fetch(deleteEventId);
+
+          if (!eventToDelete) {
+            throw new Error("Guild scheduled event not found.");
+          }
+
+          await eventToDelete.delete();
+
+          data.success = true;
+          data.message = "Guild scheduled event deleted successfully.";
+          data.deletedEventId = deleteEventId;
+        } catch (error: any) {
+          throw new Error(
+            `Failed to delete guild scheduled event: ${error.message}`
           );
         }
         break;
