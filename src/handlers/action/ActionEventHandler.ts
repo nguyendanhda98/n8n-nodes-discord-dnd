@@ -116,53 +116,17 @@ export class ActionEventHandler {
         break;
 
       case ActionEventType.SEND_MESSAGE:
-        const sendAsDM = this.actionInstance.getNodeParameter(
-          "sendAsDM",
-          0,
-          false
-        ) as boolean;
-
-        let messageChannel;
-
-        if (sendAsDM) {
-          const userId = this.actionInstance.getNodeParameter(
-            "userId",
-            0
-          ) as string;
-
-          try {
-            const user = await this.client.users.fetch(userId);
-            messageChannel = await user.createDM();
-          } catch (error: any) {
-            throw new Error(`Failed to create DM channel: ${error.message}`);
-          }
-        } else {
-          const messageChannelId = this.actionInstance.getNodeParameter(
-            "channelId",
-            0
-          ) as string;
-
-          messageChannel = (await this.client.channels.fetch(
-            messageChannelId
-          )) as TextChannel | DMChannel | ThreadChannel;
-
-          if (!messageChannel?.isTextBased()) {
-            throw new Error("The provided channel is not a text channel!");
-          }
-        }
-
-        let messageContent;
-        let embeds = [];
-        let files = [];
-
         // Get message content
-        messageContent = this.actionInstance.getNodeParameter(
+        let messageContent = this.actionInstance.getNodeParameter(
           "messageContent",
           0,
           ""
         ) as string;
 
-        // Try to get embeds collection
+        let embeds: any[] = [];
+        let files: any[] = [];
+
+        // Process embeds
         const embedsCollection = this.actionInstance.getNodeParameter(
           "embeds",
           0,
@@ -180,31 +144,21 @@ export class ActionEventHandler {
             // Handle JSON embeds
             if (inputMethod === "json") {
               try {
-                return JSON.parse(embed.jsonEmbed || "{}");
+                return JSON.parse(embed.jsonPayload || "{}");
               } catch (error: any) {
                 throw new Error(`Invalid JSON in embed: ${error.message}`);
               }
             }
 
             // Handle field-based embeds
-            const processedEmbed: IDataObject = {
-              type: embed.type || "rich",
-              title: embed.title || undefined,
-              description: embed.description || undefined,
-              url: embed.url || undefined,
-              color: embed.color || undefined,
-              timestamp: embed.timestamp
-                ? new Date(embed.timestamp).toISOString()
-                : undefined,
-            };
-
-            // Process embed fields if they exist
-            if (embed.fields && embed.fields.field) {
-              processedEmbed.fields = embed.fields.field.map((field: any) => ({
-                name: field.name || "Field",
-                value: field.value || "Value",
-                inline: field.inline || false,
-              }));
+            const processedEmbed: IDataObject = {};
+            
+            if (embed.description) processedEmbed.description = embed.description;
+            if (embed.title) processedEmbed.title = embed.title;
+            if (embed.url) processedEmbed.url = embed.url;
+            if (embed.color) processedEmbed.color = embed.color;
+            if (embed.timestamp) {
+              processedEmbed.timestamp = new Date(embed.timestamp).toISOString();
             }
 
             // Process thumbnail and image
@@ -216,62 +170,20 @@ export class ActionEventHandler {
               processedEmbed.image = { url: embed.imageUrl };
             }
 
-            // Process footer
-            if (embed.footerText) {
-              processedEmbed.footer = {
-                text: embed.footerText,
-                icon_url: embed.footerIconUrl || undefined,
-              };
-            }
-
             // Process author
             if (embed.authorName) {
               processedEmbed.author = {
                 name: embed.authorName,
-                url: embed.authorUrl || undefined,
-                icon_url: embed.authorIconUrl || undefined,
               };
             }
 
-            // Process video (if applicable)
-            if (embed.type === "video" && embed.videoUrl) {
+            // Process video
+            if (embed.videoUrl) {
               processedEmbed.video = { url: embed.videoUrl };
-            }
-
-            // Process provider (if applicable)
-            if (embed.providerName) {
-              processedEmbed.provider = {
-                name: embed.providerName,
-                url: embed.providerUrl || undefined,
-              };
             }
 
             return processedEmbed;
           });
-        }
-
-        // Handle JSON payload if specified
-        try {
-          // Check if JSON payload parameter exists and has a non-empty value
-          const jsonPayload = this.actionInstance.getNodeParameter(
-            "jsonPayload",
-            0,
-            ""
-          ) as string;
-
-          if (jsonPayload) {
-            const parsedPayload = JSON.parse(jsonPayload);
-            if (parsedPayload.content !== undefined) {
-              messageContent = parsedPayload.content;
-            }
-            if (parsedPayload.embeds !== undefined) {
-              embeds = parsedPayload.embeds;
-            }
-            // Files would need to be handled separately
-          }
-        } catch (error: any) {
-          // If parsing fails or the parameter doesn't exist, continue with the regular fields
-          // No need to throw an error here as we'll use the values from the regular fields
         }
 
         // Process file uploads if any
@@ -298,19 +210,71 @@ export class ActionEventHandler {
           }
         }
 
-        // Check for message to reply to
+        // Get options
         const options = this.actionInstance.getNodeParameter(
           "options",
           0,
           {}
         ) as IDataObject;
 
+        // Get send to destination
+        const sendTo = this.actionInstance.getNodeParameter(
+          "sendTo",
+          0,
+          "channel"
+        ) as string;
+
+        let messageChannel;
+
+        if (sendTo === "user") {
+          const userId = this.actionInstance.getNodeParameter(
+            "userId",
+            0
+          ) as string;
+
+          try {
+            const user = await this.client.users.fetch(userId);
+            messageChannel = await user.createDM();
+          } catch (error: any) {
+            throw new Error(`Failed to create DM channel: ${error.message}`);
+          }
+        } else {
+          const channelId = this.actionInstance.getNodeParameter(
+            "channelId",
+            0
+          ) as string;
+
+          messageChannel = (await this.client.channels.fetch(
+            channelId
+          )) as TextChannel | DMChannel | ThreadChannel;
+
+          if (!messageChannel?.isTextBased()) {
+            throw new Error("The provided channel is not a text channel!");
+          }
+        }
+
         const messageOptions: any = {
-          content: messageContent,
-          embeds: embeds,
-          files: files,
+          content: messageContent || undefined,
+          embeds: embeds.length > 0 ? embeds : undefined,
+          files: files.length > 0 ? files : undefined,
         };
 
+        // Add flags if present
+        if (options.flags && Array.isArray(options.flags)) {
+          let flags = 0;
+          const flagsArray = options.flags as string[];
+          if (flagsArray.includes("suppressEmbeds")) {
+            flags |= 1 << 2; // SUPPRESS_EMBEDS = 1 << 2
+          }
+          if (flagsArray.includes("suppressNotifications")) {
+            flags |= 1 << 12; // SUPPRESS_NOTIFICATIONS = 1 << 12
+          }
+          if (flags > 0) {
+            messageOptions.flags = flags;
+          }
+        }
+
+        // Add reply if present
         if (options.messageId) {
           messageOptions.reply = { messageReference: options.messageId };
         }

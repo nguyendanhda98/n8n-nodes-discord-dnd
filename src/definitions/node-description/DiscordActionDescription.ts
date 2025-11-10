@@ -45,63 +45,74 @@ export const DiscordActionDescription: INodeTypeDescription = {
         loadOptionsDependsOn: ["actionType"],
       },
     },
+    // Send Message Fields - Send To
     {
-      displayName: "Send as Direct Message",
-      name: "sendAsDM",
-      type: "boolean",
-      default: false,
-      description:
-        "Whether to send the message as a direct message to a user instead of to a channel",
+      displayName: "Send To",
+      name: "sendTo",
+      type: "options",
+      required: true,
+      default: "channel",
+      description: "Where to send the message",
+      options: [
+        { name: "Channel", value: "channel" },
+        { name: "User", value: "user" },
+      ],
       displayOptions: {
         show: {
           action: [ActionEventType.SEND_MESSAGE],
         },
       },
     },
+    // Server ID (for channel)
     {
-      displayName: "Channel Id",
+      displayName: "Server ID",
+      name: "serverId",
+      type: "string",
+      default: "",
+      placeholder: "123456789012345678",
+      description: "The ID of the Discord server (guild)",
+      displayOptions: {
+        show: {
+          action: [ActionEventType.SEND_MESSAGE],
+          sendTo: ["channel"],
+        },
+      },
+    },
+    // Channel ID (for channel)
+    {
+      displayName: "Channel ID",
       name: "channelId",
       type: "string",
       default: "",
       placeholder: "123456789012345678",
-      description: "The ID of the channel to send the action to",
+      description: "The ID of the channel to send the message to",
       displayOptions: {
         show: {
-          action: [
-            ActionEventType.SEND_TYPING,
-            ActionEventType.SEND_MESSAGE,
-            ActionEventType.DELETE_MESSAGE,
-            ActionEventType.EDIT_MESSAGE,
-            ActionEventType.REACT_TO_MESSAGE,
-            ActionEventType.REMOVE_REACTION,
-            ActionEventType.PIN_MESSAGE,
-            ActionEventType.UNPIN_MESSAGE,
-          ],
+          action: [ActionEventType.SEND_MESSAGE],
+          sendTo: ["channel"],
         },
       },
     },
+    // User ID (for user)
     {
       displayName: "User ID",
       name: "userId",
       type: "string",
       default: "",
       placeholder: "123456789012345678",
-      description: "The ID of the user",
+      description: "The ID of the user to send a direct message to",
       displayOptions: {
         show: {
-          action: [
-            ActionEventType.SEND_MESSAGE,
-            ActionEventType.SEND_TYPING,
-            ActionEventType.REMOVE_REACTION,
-          ],
+          action: [ActionEventType.SEND_MESSAGE],
+          sendTo: ["user"],
         },
       },
     },
+    // Message Content
     {
-      displayName: "Message Content",
+      displayName: "Message",
       name: "messageContent",
       type: "string",
-      required: true,
       default: "",
       placeholder: "Hello, world!",
       description: "The content of the message to send",
@@ -111,6 +122,7 @@ export const DiscordActionDescription: INodeTypeDescription = {
         },
       },
     },
+    // Options
     {
       displayName: "Options",
       name: "options",
@@ -119,13 +131,31 @@ export const DiscordActionDescription: INodeTypeDescription = {
       default: {},
       options: [
         {
+          displayName: "Flags",
+          name: "flags",
+          type: "multiOptions",
+          default: [],
+          description: "Message flags to apply",
+          options: [
+            {
+              name: "Suppress Embeds",
+              value: "suppressEmbeds",
+              description: "Do not include any embeds when serializing this message",
+            },
+            {
+              name: "Suppress Notifications",
+              value: "suppressNotifications",
+              description: "Send a notification without pinging users",
+            },
+          ],
+        },
+        {
           displayName: "Message to Reply to",
           name: "messageId",
           type: "string",
           default: "",
           placeholder: "123456789012345678",
-          description:
-            "Fill this to make your message a reply. Add the message ID.",
+          description: "Fill this to make your message a reply. Add the message ID.",
         },
       ],
       displayOptions: {
@@ -134,6 +164,7 @@ export const DiscordActionDescription: INodeTypeDescription = {
         },
       },
     },
+    // Embeds
     {
       displayName: "Embeds",
       name: "embeds",
@@ -163,62 +194,19 @@ export const DiscordActionDescription: INodeTypeDescription = {
                 },
               ],
               default: "fields",
-              description:
-                "Select how you want to input the message content and embeds.",
+              description: "Select how you want to input the embed data",
             },
             {
-              displayName: "Title",
-              name: "title",
-              type: "string",
+              displayName: "Value",
+              name: "jsonPayload",
+              type: "json",
               default: "",
               displayOptions: {
                 show: {
-                  inputMethod: ["fields"],
+                  inputMethod: ["json"],
                 },
               },
-              description: "The title of the embed",
-            },
-            {
-              displayName: "type",
-              name: "type",
-              type: "options",
-              displayOptions: {
-                show: {
-                  inputMethod: ["fields"],
-                },
-              },
-              default: EmbedType.Rich,
-              description: "The type of embed to send",
-              options: [
-                {
-                  name: "Rich",
-                  value: EmbedType.Rich,
-                },
-                {
-                  name: "Image",
-                  value: EmbedType.Image,
-                },
-                {
-                  name: "Video",
-                  value: EmbedType.Video,
-                },
-                {
-                  name: "Gifv",
-                  value: EmbedType.GIFV,
-                },
-                {
-                  name: "Article",
-                  value: EmbedType.Article,
-                },
-                {
-                  name: "Link",
-                  value: EmbedType.Link,
-                },
-                {
-                  name: "Poll Result",
-                  value: EmbedType.PollResult,
-                },
-              ],
+              description: "The JSON payload for the embed",
             },
             {
               displayName: "Description",
@@ -233,8 +221,8 @@ export const DiscordActionDescription: INodeTypeDescription = {
               description: "The description of the embed",
             },
             {
-              displayName: "URL",
-              name: "url",
+              displayName: "Author",
+              name: "authorName",
               type: "string",
               default: "",
               displayOptions: {
@@ -242,7 +230,20 @@ export const DiscordActionDescription: INodeTypeDescription = {
                   inputMethod: ["fields"],
                 },
               },
-              description: "The URL of the embed",
+              description: "The name of the author of the embed",
+            },
+            {
+              displayName: "Color",
+              name: "color",
+              type: "number",
+              default: 0,
+              description:
+                "The color of the embed in decimal format. For example, 16711731 for red (#FF5733)",
+              displayOptions: {
+                show: {
+                  inputMethod: ["fields"],
+                },
+              },
             },
             {
               displayName: "Timestamp",
@@ -258,21 +259,8 @@ export const DiscordActionDescription: INodeTypeDescription = {
               },
             },
             {
-              displayName: "Color",
-              name: "color",
-              type: "number",
-              default: 0,
-              description:
-                "The color of the embed in RGB format. For example, 0xFF5733 for red.",
-              displayOptions: {
-                show: {
-                  inputMethod: ["fields"],
-                },
-              },
-            },
-            {
-              displayName: "Footer Text",
-              name: "footerText",
+              displayName: "Title",
+              name: "title",
               type: "string",
               default: "",
               displayOptions: {
@@ -280,11 +268,11 @@ export const DiscordActionDescription: INodeTypeDescription = {
                   inputMethod: ["fields"],
                 },
               },
-              description: "The text to display in the footer of the embed",
+              description: "The title of the embed",
             },
             {
-              displayName: "Footer Icon URL",
-              name: "footerIconUrl",
+              displayName: "URL",
+              name: "url",
               type: "string",
               default: "",
               displayOptions: {
@@ -292,11 +280,10 @@ export const DiscordActionDescription: INodeTypeDescription = {
                   inputMethod: ["fields"],
                 },
               },
-              description:
-                "The URL of the icon to display in the footer of the embed",
+              description: "The URL of the embed",
             },
             {
-              displayName: "Image URL",
+              displayName: "URL Image",
               name: "imageUrl",
               type: "string",
               default: "",
@@ -308,7 +295,7 @@ export const DiscordActionDescription: INodeTypeDescription = {
               description: "The URL of the image to include in the embed",
             },
             {
-              displayName: "Thumbnail URL",
+              displayName: "URL Thumbnail",
               name: "thumbnailUrl",
               type: "string",
               default: "",
@@ -320,111 +307,7 @@ export const DiscordActionDescription: INodeTypeDescription = {
               description: "The URL of the thumbnail to include in the embed",
             },
             {
-              displayName: "Provider Name",
-              name: "providerName",
-              type: "string",
-              default: "",
-              displayOptions: {
-                show: {
-                  inputMethod: ["fields"],
-                },
-              },
-              description: "The name of the provider of the embed",
-            },
-            {
-              displayName: "Provider URL",
-              name: "providerUrl",
-              type: "string",
-              default: "",
-              displayOptions: {
-                show: {
-                  inputMethod: ["fields"],
-                },
-              },
-              description: "The URL of the provider of the embed",
-            },
-            {
-              displayName: "Author Name",
-              name: "authorName",
-              type: "string",
-              default: "",
-              displayOptions: {
-                show: {
-                  inputMethod: ["fields"],
-                },
-              },
-              description: "The name of the author of the embed",
-            },
-            {
-              displayName: "Author URL",
-              name: "authorUrl",
-              type: "string",
-              default: "",
-              displayOptions: {
-                show: {
-                  inputMethod: ["fields"],
-                },
-              },
-              description: "The URL of the author of the embed",
-            },
-            {
-              displayName: "Author Icon URL",
-              name: "authorIconUrl",
-              type: "string",
-              default: "",
-              displayOptions: {
-                show: {
-                  inputMethod: ["fields"],
-                },
-              },
-              description:
-                "The URL of the icon to display next to the author of the embed",
-            },
-            {
-              displayName: "Fields",
-              name: "fields",
-              type: "fixedCollection",
-              placeholder: "Add Field",
-              displayOptions: {
-                show: {
-                  inputMethod: ["fields"],
-                },
-              },
-              default: {},
-              description:
-                "The fields to include in the embed. Each field can have a name, value, and inline option.",
-              typeOptions: {
-                multipleValues: true,
-              },
-              options: [
-                {
-                  name: "field",
-                  displayName: "Field",
-                  values: [
-                    {
-                      displayName: "Name",
-                      name: "name",
-                      type: "string",
-                      default: "",
-                    },
-                    {
-                      displayName: "Value",
-                      name: "value",
-                      type: "string",
-                      default: "",
-                    },
-                    {
-                      displayName: "Inline",
-                      name: "inline",
-                      type: "boolean",
-                      default: false,
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              displayName: "video URL",
+              displayName: "URL Video",
               name: "videoUrl",
               displayOptions: {
                 show: {
@@ -433,29 +316,87 @@ export const DiscordActionDescription: INodeTypeDescription = {
               },
               type: "string",
               default: "",
-              description:
-                "The URL of the video to include in the embed. This will be ignored if the type is not video.",
-            },
-            {
-              displayName: "JSON Payload",
-              name: "jsonPayload",
-              type: "json",
-              default: "",
-              displayOptions: {
-                show: {
-                  inputMethod: ["json"],
-                },
-              },
-              description:
-                "The JSON payload to send as the message. This will override all other fields.",
+              description: "The URL of the video to include in the embed",
             },
           ],
         },
       ],
-      description: " List of embeds to include in the message.",
+      description: "List of embeds to include in the message",
       displayOptions: {
         show: {
           action: [ActionEventType.SEND_MESSAGE],
+        },
+      },
+    },
+    // Files
+    {
+      displayName: "Files",
+      name: "files",
+      type: "fixedCollection",
+      typeOptions: {
+        multipleValues: true,
+      },
+      placeholder: "Add File",
+      default: {},
+      options: [
+        {
+          name: "file",
+          displayName: "File",
+          values: [
+            {
+              displayName: "Input Data Field Name",
+              name: "binaryProperty",
+              type: "string",
+              default: "data",
+              description:
+                "The name of the input field containing the binary file data to be sent",
+            },
+          ],
+        },
+      ],
+      description: "List of files to attach to the message",
+      displayOptions: {
+        show: {
+          action: [ActionEventType.SEND_MESSAGE],
+        },
+      },
+    },
+    // Other Actions - Channel ID
+    {
+      displayName: "Channel ID",
+      name: "channelId",
+      type: "string",
+      default: "",
+      placeholder: "123456789012345678",
+      description: "The ID of the channel",
+      displayOptions: {
+        show: {
+          action: [
+            ActionEventType.SEND_TYPING,
+            ActionEventType.DELETE_MESSAGE,
+            ActionEventType.EDIT_MESSAGE,
+            ActionEventType.REACT_TO_MESSAGE,
+            ActionEventType.REMOVE_REACTION,
+            ActionEventType.PIN_MESSAGE,
+            ActionEventType.UNPIN_MESSAGE,
+          ],
+        },
+      },
+    },
+    // Other Actions - User ID
+    {
+      displayName: "User ID",
+      name: "userId",
+      type: "string",
+      default: "",
+      placeholder: "123456789012345678",
+      description: "The ID of the user",
+      displayOptions: {
+        show: {
+          action: [
+            ActionEventType.SEND_TYPING,
+            ActionEventType.REMOVE_REACTION,
+          ],
         },
       },
     },
