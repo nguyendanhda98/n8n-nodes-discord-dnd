@@ -778,6 +778,28 @@ export class TriggerEventHandler {
             name: guildScheduled.guild?.name,
             icon: guildScheduled.guild?.icon,
           };
+          
+          // Add event URL
+          data.eventUrl = guildScheduled.url;
+          
+          // Fetch interested users
+          try {
+            const interestedUsers = await guildScheduled.fetchSubscribers();
+            data.interestedCount = interestedUsers.size;
+            data.interestedUsers = interestedUsers.map((eventUser) => ({
+              id: eventUser.user.id,
+              username: eventUser.user.username,
+              discriminator: eventUser.user.discriminator,
+              globalName: eventUser.user.globalName,
+              displayName: eventUser.user.displayName,
+              tag: eventUser.user.tag,
+              serverName: guildScheduled.guild?.name,
+            }));
+          } catch (error) {
+            console.error('Error fetching interested users:', error);
+            data.interestedCount = 0;
+            data.interestedUsers = [];
+          }
           break;
 
         case Events.GuildScheduledEventUpdate:
@@ -788,6 +810,9 @@ export class TriggerEventHandler {
             ? { ...oldGuildScheduledEvent }
             : null;
           data.newGuildScheduledEvent = { ...newGuildScheduledEvent };
+          
+          // Add event URL
+          data.eventUrl = newGuildScheduledEvent.url;
           
           // Add status change information for custom events
           if (triggerEventName === "guildScheduledEventStart" || 
@@ -804,6 +829,25 @@ export class TriggerEventHandler {
               icon: newGuildScheduledEvent.guild?.icon,
             };
           }
+          
+          // Fetch interested users for all update events
+          try {
+            const interestedUsers = await newGuildScheduledEvent.fetchSubscribers();
+            data.interestedCount = interestedUsers.size;
+            data.interestedUsers = interestedUsers.map((eventUser) => ({
+              id: eventUser.user.id,
+              username: eventUser.user.username,
+              discriminator: eventUser.user.discriminator,
+              globalName: eventUser.user.globalName,
+              displayName: eventUser.user.displayName,
+              tag: eventUser.user.tag,
+              serverName: newGuildScheduledEvent.guild?.name,
+            }));
+          } catch (error) {
+            console.error('Error fetching interested users:', error);
+            data.interestedCount = 0;
+            data.interestedUsers = [];
+          }
           break;
 
         case Events.GuildScheduledEventUserAdd:
@@ -813,6 +857,28 @@ export class TriggerEventHandler {
 
           data.user = { ...user };
           data.guildScheduledEvent = { ...guildScheduledEvent };
+          
+          // Add event URL
+          data.eventUrl = guildScheduledEvent.url;
+          
+          // Fetch interested users
+          try {
+            const interestedUsers = await guildScheduledEvent.fetchSubscribers();
+            data.interestedCount = interestedUsers.size;
+            data.interestedUsers = interestedUsers.map((eventUser) => ({
+              id: eventUser.user.id,
+              username: eventUser.user.username,
+              discriminator: eventUser.user.discriminator,
+              globalName: eventUser.user.globalName,
+              displayName: eventUser.user.displayName,
+              tag: eventUser.user.tag,
+              serverName: guildScheduledEvent.guild?.name,
+            }));
+          } catch (error) {
+            console.error('Error fetching interested users:', error);
+            data.interestedCount = 0;
+            data.interestedUsers = [];
+          }
           break;
 
         // Interaction events

@@ -150,20 +150,7 @@ export const DiscordTriggerDescription: INodeTypeDescription = {
       default: "",
       required: true,
       placeholder: "123456789012345678",
-      description: "The Discord Server (Guild) ID where the scheduled events are located. All events in this server will be monitored unless you specify Event IDs.",
-      displayOptions: {
-        show: {
-          triggerType: ["scheduledEvent"],
-        },
-      },
-    },
-    {
-      displayName: "Event IDs",
-      name: "eventIds",
-      type: "string",
-      default: "",
-      placeholder: "123456789012345678,987654321098765432",
-      description: "Optional: Comma-separated list of specific Scheduled Event IDs to monitor. Leave empty to monitor ALL events in the server. If specified, only these events will trigger the workflow.",
+      description: "The Discord Server (Guild) ID where the scheduled events are located. All events in this server will be monitored unless you specify Event IDs in Additional Fields.",
       displayOptions: {
         show: {
           triggerType: ["scheduledEvent"],
@@ -178,6 +165,20 @@ export const DiscordTriggerDescription: INodeTypeDescription = {
       default: {},
       options: [
         {
+          displayName: "Event IDs",
+          name: "eventIds",
+          type: "string",
+          default: "",
+          placeholder: "123456789012345678,987654321098765432",
+          description:
+            "Comma-separated list of specific Scheduled Event IDs to monitor. Leave empty to monitor ALL events in the server.",
+          displayOptions: {
+            show: {
+              "/triggerType": ["scheduledEvent"],
+            },
+          },
+        },
+        {
           displayName: "Server IDs",
           name: "serverIds",
           type: "string",
@@ -185,6 +186,11 @@ export const DiscordTriggerDescription: INodeTypeDescription = {
           placeholder: "123456789012345678,123456789012345678",
           description:
             "Comma-separated list of server IDs to filter the event data by",
+          displayOptions: {
+            hide: {
+              "/triggerType": ["scheduledEvent"],
+            },
+          },
         },
         {
           displayName: "Channel IDs",
@@ -194,6 +200,11 @@ export const DiscordTriggerDescription: INodeTypeDescription = {
           placeholder: "123456789012345678,123456789012345678",
           description:
             "Comma-separated list of channel IDs to filter the event data by",
+          displayOptions: {
+            hide: {
+              "/triggerType": ["scheduledEvent"],
+            },
+          },
         },
         {
           displayName: "Role IDs",
@@ -203,6 +214,11 @@ export const DiscordTriggerDescription: INodeTypeDescription = {
           placeholder: "123456789012345678,123456789012345678",
           description:
             "Comma-separated list of role IDs to filter the event data by",
+          displayOptions: {
+            hide: {
+              "/triggerType": ["scheduledEvent"],
+            },
+          },
         },
         {
           displayName: "User IDs",
@@ -212,6 +228,11 @@ export const DiscordTriggerDescription: INodeTypeDescription = {
           placeholder: "123456789012345678,123456789012345678",
           description:
             "Comma-separated list of user IDs to filter the event data by",
+          displayOptions: {
+            hide: {
+              "/triggerType": ["scheduledEvent"],
+            },
+          },
         },
       ],
     },
