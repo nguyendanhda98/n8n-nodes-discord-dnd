@@ -61,7 +61,8 @@ export class TriggerEventHandler {
     serverIds: string[] = [],
     channelIds: string[] = [],
     roleIds: string[] = [],
-    userIds: string[] = []
+    userIds: string[] = [],
+    eventIds: string[] = []
   ) {
     // Store the original event name to avoid conflicts with Discord.js Event types
     const triggerEventName = event;
@@ -101,6 +102,25 @@ export class TriggerEventHandler {
               oldEvent?.status === GuildScheduledEventStatus.Completed) {
             return;
           }
+        }
+        
+        // Filter by event IDs if specified
+        if (eventIds.length > 0 && !eventIds.includes(newEvent.id)) {
+          return;
+        }
+      }
+      
+      // Filter scheduled events by event IDs (for non-status-change events)
+      if (actualEvent === Events.GuildScheduledEventCreate ||
+          actualEvent === Events.GuildScheduledEventDelete ||
+          actualEvent === Events.GuildScheduledEventUpdate ||
+          actualEvent === Events.GuildScheduledEventUserAdd ||
+          actualEvent === Events.GuildScheduledEventUserRemove) {
+        const scheduledEvent: GuildScheduledEvent = args[0];
+        
+        // Filter by event IDs if specified
+        if (eventIds.length > 0 && !eventIds.includes(scheduledEvent.id)) {
+          return;
         }
       }
 

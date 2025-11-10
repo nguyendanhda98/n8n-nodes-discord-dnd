@@ -144,13 +144,26 @@ export const DiscordTriggerDescription: INodeTypeDescription = {
       },
     },
     {
-      displayName: "Server IDs",
+      displayName: "Server ID",
       name: "serverId",
       type: "string",
       default: "",
       required: true,
+      placeholder: "123456789012345678",
+      description: "The Discord Server (Guild) ID where the scheduled events are located. All events in this server will be monitored unless you specify Event IDs.",
+      displayOptions: {
+        show: {
+          triggerType: ["scheduledEvent"],
+        },
+      },
+    },
+    {
+      displayName: "Event IDs",
+      name: "eventIds",
+      type: "string",
+      default: "",
       placeholder: "123456789012345678,987654321098765432",
-      description: "Comma-separated list of Discord Server (Guild) IDs where the scheduled events are located. You can add multiple server IDs separated by commas to monitor events from multiple servers.",
+      description: "Optional: Comma-separated list of specific Scheduled Event IDs to monitor. Leave empty to monitor ALL events in the server. If specified, only these events will trigger the workflow.",
       displayOptions: {
         show: {
           triggerType: ["scheduledEvent"],

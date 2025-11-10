@@ -9,6 +9,7 @@ export interface ITriggerParameters {
   channelIds?: string[];
   roleIds?: string[];
   userIds?: string[];
+  eventIds?: string[];
 }
 
 export interface IActionParameters {

@@ -36,11 +36,17 @@ export class DiscordTrigger implements INodeType {
       }
     }
     
-    // Get server IDs for scheduled event triggers (required, can be multiple)
+    // Get server ID for scheduled event triggers (required, single server only)
     if (parameters.triggerType === "scheduledEvent") {
-      const serverIds = this.getNodeParameter("serverId", "") as string;
-      if (serverIds) {
-        parameters.serverIds = serverIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
+      const serverId = this.getNodeParameter("serverId", "") as string;
+      if (serverId && serverId.trim()) {
+        parameters.serverIds = [serverId.trim()];
+      }
+      
+      // Get event IDs for scheduled event triggers (optional, can be multiple)
+      const eventIds = this.getNodeParameter("eventIds", "") as string;
+      if (eventIds) {
+        parameters.eventIds = eventIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
       }
     }
     
@@ -87,7 +93,8 @@ export class DiscordTrigger implements INodeType {
       parameters.serverIds,
       parameters.channelIds,
       parameters.roleIds,
-      parameters.userIds
+      parameters.userIds,
+      parameters.eventIds
     );
 
     const closeFunction = async () => {
