@@ -17,6 +17,82 @@ export class ActionEventHandler {
     private readonly actionInstance: IExecuteFunctions
   ) {}
 
+  /**
+   * Fetch all users who have RSVP'd (interested) in a guild scheduled event
+   */
+  private async fetchEventInterestedUsers(
+    guildId: string,
+    eventId: string
+  ): Promise<string[]> {
+    const botToken = this.client.token;
+    if (!botToken) {
+      throw new Error("Bot token is not available");
+    }
+
+    const limit = 100;
+    let before: string | undefined = undefined;
+    const allUserIds: string[] = [];
+
+    try {
+      while (true) {
+        const params = new URLSearchParams({
+          limit: String(limit),
+          with_member: "false", // We only need user IDs
+        });
+        if (before) {
+          params.set("before", before);
+        }
+
+        const response = await fetch(
+          `https://discord.com/api/v10/guilds/${guildId}/scheduled-events/${eventId}/users?${params.toString()}`,
+          {
+            headers: {
+              Authorization: `Bot ${botToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(
+            `Discord API error ${response.status}: ${errorText}`
+          );
+        }
+
+        const chunk = await response.json();
+        
+        // Extract user IDs from the response
+        if (Array.isArray(chunk)) {
+          const userIds = chunk
+            .map((item: any) => item.user?.id)
+            .filter((id: string | undefined) => id !== undefined);
+          allUserIds.push(...userIds);
+
+          // If we got fewer results than the limit, we've reached the end
+          if (chunk.length < limit) {
+            break;
+          }
+
+          // Use the last user ID for pagination
+          const lastUserId = chunk[chunk.length - 1]?.user?.id;
+          if (!lastUserId) {
+            break;
+          }
+          before = lastUserId;
+        } else {
+          break;
+        }
+      }
+    } catch (error: any) {
+      // Log error but don't fail the entire operation
+      console.error(`Failed to fetch interested users: ${error.message}`);
+      return [];
+    }
+
+    return allUserIds;
+  }
+
   async setupEventHandler(action: string): Promise<IDataObject> {
     const data: IDataObject = {};
 
@@ -568,6 +644,14 @@ export class ActionEventHandler {
             };
           }
 
+          // Fetch interested users (RSVPed users)
+          const interestedUserIds = await this.fetchEventInterestedUsers(
+            getGuildId,
+            getGuildScheduledEventId
+          );
+          data.interestedUsers = interestedUserIds;
+          data.interestedUsersCount = interestedUserIds.length;
+
           data.success = true;
         } catch (error: any) {
           throw new Error(
@@ -725,32 +809,44 @@ export class ActionEventHandler {
           const getManyEventsGuild = await this.client.guilds.fetch(getManyEventsGuildId);
           const events = await getManyEventsGuild.scheduledEvents.fetch();
 
-          const eventsArray = events.map(event => ({
-            id: event.id,
-            guildId: event.guildId,
-            channelId: event.channelId,
-            creatorId: event.creatorId,
-            name: event.name,
-            description: event.description,
-            scheduledStartTimestamp: event.scheduledStartTimestamp,
-            scheduledEndTimestamp: event.scheduledEndTimestamp,
-            privacyLevel: event.privacyLevel,
-            status: event.status,
-            entityType: event.entityType,
-            entityId: event.entityId,
-            entityMetadata: event.entityMetadata,
-            userCount: event.userCount,
-            image: event.image,
-            createdTimestamp: event.createdTimestamp,
-            url: event.url,
-            creator: event.creator ? {
-              id: event.creator.id,
-              username: event.creator.username,
-              discriminator: event.creator.discriminator,
-              avatar: event.creator.avatar,
-              bot: event.creator.bot,
-            } : null,
-          }));
+          // Fetch interested users for each event
+          const eventsArray = await Promise.all(
+            events.map(async (event) => {
+              const interestedUserIds = await this.fetchEventInterestedUsers(
+                getManyEventsGuildId,
+                event.id
+              );
+
+              return {
+                id: event.id,
+                guildId: event.guildId,
+                channelId: event.channelId,
+                creatorId: event.creatorId,
+                name: event.name,
+                description: event.description,
+                scheduledStartTimestamp: event.scheduledStartTimestamp,
+                scheduledEndTimestamp: event.scheduledEndTimestamp,
+                privacyLevel: event.privacyLevel,
+                status: event.status,
+                entityType: event.entityType,
+                entityId: event.entityId,
+                entityMetadata: event.entityMetadata,
+                userCount: event.userCount,
+                image: event.image,
+                createdTimestamp: event.createdTimestamp,
+                url: event.url,
+                creator: event.creator ? {
+                  id: event.creator.id,
+                  username: event.creator.username,
+                  discriminator: event.creator.discriminator,
+                  avatar: event.creator.avatar,
+                  bot: event.creator.bot,
+                } : null,
+                interestedUsers: interestedUserIds,
+                interestedUsersCount: interestedUserIds.length,
+              };
+            })
+          );
 
           data.success = true;
           data.count = eventsArray.length;

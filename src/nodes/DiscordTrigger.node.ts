@@ -36,6 +36,14 @@ export class DiscordTrigger implements INodeType {
       }
     }
     
+    // Get server IDs for scheduled event triggers (required, can be multiple)
+    if (parameters.triggerType === "scheduledEvent") {
+      const serverIds = this.getNodeParameter("serverId", "") as string;
+      if (serverIds) {
+        parameters.serverIds = serverIds.split(',').map(id => id.trim()).filter(id => id.length > 0);
+      }
+    }
+    
     // Get additional fields for filtering
     const additionalFields = this.getNodeParameter("additionalFields", {}) as {
       serverIds?: string;
@@ -44,7 +52,8 @@ export class DiscordTrigger implements INodeType {
       userIds?: string;
     };
     
-    if (additionalFields.serverIds) {
+    // For non-scheduled event types, get serverIds from additionalFields
+    if (parameters.triggerType !== "scheduledEvent" && additionalFields.serverIds) {
       parameters.serverIds = additionalFields.serverIds.split(',').map(id => id.trim());
     }
     

@@ -89,24 +89,39 @@ export const DiscordTriggerMethods = {
         presence: [{ name: "Presence Update", value: Events.PresenceUpdate }],
         scheduledEvent: [
           {
-            name: "Guild Scheduled Event Create",
+            name: "Scheduled Event Create",
             value: Events.GuildScheduledEventCreate,
+            description: "Triggered when a scheduled event is created",
           },
           {
-            name: "Guild Scheduled Event Delete",
-            value: Events.GuildScheduledEventDelete,
-          },
-          {
-            name: "Guild Scheduled Event Update",
+            name: "Scheduled Event Update",
             value: Events.GuildScheduledEventUpdate,
+            description: "Triggered when a scheduled event is updated (name, time, description, etc.)",
           },
           {
-            name: "Guild Scheduled Event User Add",
+            name: "Scheduled Event Cancel",
+            value: Events.GuildScheduledEventDelete,
+            description: "Triggered when a scheduled event is cancelled",
+          },
+          {
+            name: "Scheduled Event Start",
+            value: "guildScheduledEventStart",
+            description: "Triggered when a scheduled event starts (status changes to ACTIVE)",
+          },
+          {
+            name: "Scheduled Event End",
+            value: "guildScheduledEventEnd",
+            description: "Triggered when a scheduled event ends (status changes to COMPLETED)",
+          },
+          {
+            name: "Scheduled Event User Add (Interested)",
             value: Events.GuildScheduledEventUserAdd,
+            description: "Triggered when a user marks themselves as interested",
           },
           {
-            name: "Guild Scheduled Event User Remove",
+            name: "Scheduled Event User Remove (Uninterested)",
             value: Events.GuildScheduledEventUserRemove,
+            description: "Triggered when a user removes their interested status",
           },
         ],
         interaction: [

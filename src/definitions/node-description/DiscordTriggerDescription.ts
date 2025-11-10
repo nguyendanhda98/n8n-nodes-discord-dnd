@@ -144,6 +144,20 @@ export const DiscordTriggerDescription: INodeTypeDescription = {
       },
     },
     {
+      displayName: "Server IDs",
+      name: "serverId",
+      type: "string",
+      default: "",
+      required: true,
+      placeholder: "123456789012345678,987654321098765432",
+      description: "Comma-separated list of Discord Server (Guild) IDs where the scheduled events are located. You can add multiple server IDs separated by commas to monitor events from multiple servers.",
+      displayOptions: {
+        show: {
+          triggerType: ["scheduledEvent"],
+        },
+      },
+    },
+    {
       displayName: "Additional Fields",
       name: "additionalFields",
       type: "collection",

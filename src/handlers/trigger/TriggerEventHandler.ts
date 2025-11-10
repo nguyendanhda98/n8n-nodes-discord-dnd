@@ -63,12 +63,49 @@ export class TriggerEventHandler {
     roleIds: string[] = [],
     userIds: string[] = []
   ) {
+    // Store the original event name to avoid conflicts with Discord.js Event types
+    const triggerEventName = event;
+    
+    // Map custom event names to actual Discord events
+    const customEventMap: { [key: string]: string } = {
+      guildScheduledEventStart: Events.GuildScheduledEventUpdate,
+      guildScheduledEventEnd: Events.GuildScheduledEventUpdate,
+    };
+
+    // Get the actual Discord event to listen to
+    const actualEvent = customEventMap[triggerEventName] || triggerEventName;
+
     // Handle main events
-    this.client.on(event, async (...args: any[]) => {
+    this.client.on(actualEvent, async (...args: any[]) => {
       const data: IDataObject = {};
 
+      // Handle custom scheduled event filters based on status changes
+      if (triggerEventName === "guildScheduledEventStart" || 
+          triggerEventName === "guildScheduledEventEnd") {
+        const oldEvent: GuildScheduledEvent | null = args[0];
+        const newEvent: GuildScheduledEvent = args[1];
+
+        // Import GuildScheduledEventStatus for comparison
+        const { GuildScheduledEventStatus } = await import("discord.js");
+
+        // Check status changes and filter accordingly
+        if (triggerEventName === "guildScheduledEventStart") {
+          // Only trigger when status changes to ACTIVE
+          if (newEvent.status !== GuildScheduledEventStatus.Active || 
+              oldEvent?.status === GuildScheduledEventStatus.Active) {
+            return;
+          }
+        } else if (triggerEventName === "guildScheduledEventEnd") {
+          // Only trigger when status changes to COMPLETED
+          if (newEvent.status !== GuildScheduledEventStatus.Completed || 
+              oldEvent?.status === GuildScheduledEventStatus.Completed) {
+            return;
+          }
+        }
+      }
+
       // Perform checks based on the event type
-      if (event === Events.MessageCreate) {
+      if (triggerEventName === Events.MessageCreate) {
         const message: Message = args[0];
 
         // Skip if message is from a bot and includeBot is false
@@ -179,10 +216,10 @@ export class TriggerEventHandler {
         }
       } else {
         // Apply general filters for non-message events
-        const guildId = this.getGuildIdFromEvent(event, args);
-        const channelId = this.getChannelIdFromEvent(event, args);
-        const userId = this.getUserIdFromEvent(event, args);
-        const member = this.getMemberFromEvent(event, args);
+        const guildId = this.getGuildIdFromEvent(actualEvent, args);
+        const channelId = this.getChannelIdFromEvent(actualEvent, args);
+        const userId = this.getUserIdFromEvent(actualEvent, args);
+        const member = this.getMemberFromEvent(actualEvent, args);
 
         // Filter by server ID if available
         if (
@@ -216,7 +253,7 @@ export class TriggerEventHandler {
         }
       }
 
-      switch (event) {
+      switch (actualEvent) {
         // Message events
         case Events.MessageCreate:
           const message: Message = args[0];
@@ -731,6 +768,22 @@ export class TriggerEventHandler {
             ? { ...oldGuildScheduledEvent }
             : null;
           data.newGuildScheduledEvent = { ...newGuildScheduledEvent };
+          
+          // Add status change information for custom events
+          if (triggerEventName === "guildScheduledEventStart" || 
+              triggerEventName === "guildScheduledEventEnd") {
+            data.statusChange = {
+              from: oldGuildScheduledEvent?.status,
+              to: newGuildScheduledEvent.status,
+              eventType: triggerEventName,
+            };
+            data.guildScheduledEvent = { ...newGuildScheduledEvent };
+            data.guild = {
+              id: newGuildScheduledEvent.guild?.id,
+              name: newGuildScheduledEvent.guild?.name,
+              icon: newGuildScheduledEvent.guild?.icon,
+            };
+          }
           break;
 
         case Events.GuildScheduledEventUserAdd:
@@ -920,6 +973,17 @@ export class TriggerEventHandler {
       case Events.GuildRoleDelete:
       case Events.GuildRoleUpdate:
         return args[0]?.guild?.id;
+
+      case Events.GuildScheduledEventCreate:
+      case Events.GuildScheduledEventDelete:
+        return args[0]?.guildId;
+
+      case Events.GuildScheduledEventUpdate:
+        return args[1]?.guildId; // args[1] is the new event
+
+      case Events.GuildScheduledEventUserAdd:
+      case Events.GuildScheduledEventUserRemove:
+        return args[0]?.guildId;
 
       default:
         return undefined;
