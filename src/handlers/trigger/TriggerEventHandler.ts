@@ -885,7 +885,7 @@ export class TriggerEventHandler {
         case Events.InteractionCreate:
           const interaction: BaseInteraction = args[0];
 
-          data.interaction = { ...interaction };
+          data.interaction = { ...interaction, token: interaction.token };
 
           break;
 
