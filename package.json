@@ -27,7 +27,7 @@
     "lint": "tslint -p tsconfig.json -c tslint.json",
     "watch": "tsc --watch",
     "test": "jest",
-    "start:publish": " rm -rf dist && npm run build && npm publish --access public",
+    "start:publish": "npm version patch && rm -rf dist && npm run build && npm publish --access public",
     "build:global": "npm run build && node ./scripts/local-deploy.js"
   },
   "files": [
