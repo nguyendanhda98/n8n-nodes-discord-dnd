@@ -17,8 +17,16 @@ export const initializeDiscordClient = async (
 
   const client = new Client(clientOptions);
 
-  // Login to Discord
   await client.login(token);
+
+  // Wait for client to be ready
+  if (!client.isReady()) {
+    await new Promise<void>((resolve) => {
+      client.once("ready", () => {
+        resolve();
+      });
+    });
+  }
 
   return client;
 };

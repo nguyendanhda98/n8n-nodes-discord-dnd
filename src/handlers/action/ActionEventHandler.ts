@@ -15,7 +15,7 @@ export class ActionEventHandler {
   constructor(
     private readonly client: Client,
     private readonly actionInstance: IExecuteFunctions
-  ) {}
+  ) { }
 
   /**
    * Fetch all users who have RSVP'd (interested) in a guild scheduled event
@@ -61,7 +61,7 @@ export class ActionEventHandler {
         }
 
         const chunk = await response.json();
-        
+
         // Extract user IDs from the response
         if (Array.isArray(chunk)) {
           const userIds = chunk
@@ -152,7 +152,7 @@ export class ActionEventHandler {
 
             // Handle field-based embeds
             const processedEmbed: IDataObject = {};
-            
+
             if (embed.description) processedEmbed.description = embed.description;
             if (embed.title) processedEmbed.title = embed.title;
             if (embed.url) processedEmbed.url = embed.url;
@@ -184,6 +184,9 @@ export class ActionEventHandler {
 
             return processedEmbed;
           });
+
+          // Filter out empty embeds
+          embeds = embeds.filter(e => Object.keys(e).length > 0);
         }
 
         // Process file uploads if any
@@ -208,6 +211,11 @@ export class ActionEventHandler {
               });
             }
           }
+        }
+
+        // Check if we have anything to send
+        if (!messageContent && embeds.length === 0 && files.length === 0) {
+          throw new Error("Cannot send an empty message! Please provide at least one of: Message Content, Embeds, or Files.");
         }
 
         // Get options
@@ -279,11 +287,16 @@ export class ActionEventHandler {
           messageOptions.reply = { messageReference: options.messageId };
         }
 
-        const message = await messageChannel.send(messageOptions);
+        try {
+          const message = await messageChannel.send(messageOptions);
 
-        data.success = true;
-        data.message = "Message sent successfully.";
-        data.messageId = message.id;
+          data.success = true;
+          data.message = "Message sent successfully.";
+          data.messageId = message.id;
+        } catch (error: any) {
+          console.error("Discord API Send Error:", error);
+          throw new Error(`Failed to send message: ${error.message}`);
+        }
         break;
 
       case ActionEventType.DELETE_MESSAGE:
@@ -951,7 +964,7 @@ export class ActionEventHandler {
 
         try {
           const createGuild = await this.client.guilds.fetch(createGuildId);
-          
+
           const channelCreateOptions: any = {
             name: channelName,
             type: channelType,
@@ -1027,15 +1040,15 @@ export class ActionEventHandler {
             for (const perm of createPermissionAdd.permission) {
               // Find if this target already has an overwrite
               const existingIndex = finalPermissionOverwrites.findIndex(ow => ow.id === perm.id);
-              
+
               if (existingIndex >= 0) {
                 // Target already exists, merge permissions
                 const existing = finalPermissionOverwrites[existingIndex];
-                
+
                 // Get current bitfields
                 let currentAllow = typeof existing.allow === 'bigint' ? existing.allow : BigInt(0);
                 let currentDeny = typeof existing.deny === 'bigint' ? existing.deny : BigInt(0);
-                
+
                 // If allow/deny is array, convert to bitfield
                 if (Array.isArray(existing.allow)) {
                   currentAllow = existing.allow.reduce((acc: bigint, flag: bigint) => acc | flag, BigInt(0));
@@ -1051,7 +1064,7 @@ export class ActionEventHandler {
                     currentAllow |= flag;
                   }
                 }
-                
+
                 if (perm.deny && perm.deny.length > 0) {
                   for (const p of perm.deny) {
                     const flag = PermissionsBitField.Flags[p as keyof typeof PermissionsBitField.Flags];
@@ -1119,7 +1132,7 @@ export class ActionEventHandler {
 
         try {
           const channelToDelete = await this.client.channels.fetch(deleteChannelTargetId);
-          
+
           if (!channelToDelete) {
             throw new Error("Channel not found.");
           }
@@ -1165,7 +1178,7 @@ export class ActionEventHandler {
 
         try {
           const channelToUpdate = await this.client.channels.fetch(updateChannelTargetId);
-          
+
           if (!channelToUpdate) {
             throw new Error("Channel not found.");
           }
@@ -1262,15 +1275,15 @@ export class ActionEventHandler {
             for (const perm of updatePermissionAdd.permission) {
               // Find if this target already has an overwrite
               const existingIndex = finalPermissionOverwrites.findIndex(ow => ow.id === perm.id);
-              
+
               if (existingIndex >= 0) {
                 // Target already exists, merge permissions
                 const existing = finalPermissionOverwrites[existingIndex];
-                
+
                 // Get current bitfields
                 let currentAllow = typeof existing.allow === 'bigint' ? existing.allow : BigInt(0);
                 let currentDeny = typeof existing.deny === 'bigint' ? existing.deny : BigInt(0);
-                
+
                 // If allow/deny is array, convert to bitfield
                 if (Array.isArray(existing.allow)) {
                   currentAllow = existing.allow.reduce((acc: bigint, flag: bigint) => acc | flag, BigInt(0));
@@ -1286,7 +1299,7 @@ export class ActionEventHandler {
                     currentAllow |= flag;
                   }
                 }
-                
+
                 if (perm.deny && perm.deny.length > 0) {
                   for (const p of perm.deny) {
                     const flag = PermissionsBitField.Flags[p as keyof typeof PermissionsBitField.Flags];
@@ -1375,7 +1388,7 @@ export class ActionEventHandler {
 
         try {
           const fetchedChannel = await this.client.channels.fetch(getChannelTargetId);
-          
+
           if (!fetchedChannel) {
             throw new Error("Channel not found.");
           }
@@ -1449,14 +1462,14 @@ export class ActionEventHandler {
 
           if (channelFilter.nameContains) {
             const nameFilter = (channelFilter.nameContains as string).toLowerCase();
-            channels = channels.filter(channel => 
+            channels = channels.filter(channel =>
               channel?.name?.toLowerCase().includes(nameFilter)
             );
           }
 
           // Convert to array and apply limit
           let channelsArray = Array.from(channels.values());
-          
+
           if (limit > 0) {
             channelsArray = channelsArray.slice(0, limit);
           }
@@ -1464,7 +1477,7 @@ export class ActionEventHandler {
           // Map to clean data
           const channelsData = channelsArray.map(channel => {
             if (!channel) return null;
-            
+
             const baseData: any = {
               id: channel.id,
               type: channel.type,
